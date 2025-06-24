@@ -1,16 +1,28 @@
-import mongoose, { Schema } from 'mongoose';
-const slotSchema = new Schema({
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface ISlot extends Document {
+  venueId: mongoose.Types.ObjectId;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  price: number;
+  sport: string;
+  sectionName: string;
+  duration: number;
+}
+
+const slotSchema = new Schema<ISlot>({
   venueId: {
     type: Schema.Types.ObjectId,
     ref: 'Venue',
     required: true,
   },
   date: {
-    type: Date, 
+    type: Date,
     required: true,
   },
   startTime: {
-    type: Date, 
+    type: Date,
     required: true,
   },
   endTime: {
@@ -26,13 +38,14 @@ const slotSchema = new Schema({
     required: true,
   },
   sectionName: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: 'Section',
     required: true,
   },
   duration: {
-    type: Number, 
+    type: Number,
     required: true,
   },
 }, { timestamps: true });
 
-export default mongoose.model('Slot', slotSchema);
+export default mongoose.model<ISlot>('Slot', slotSchema);
