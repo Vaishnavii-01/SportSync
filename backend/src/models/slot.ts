@@ -7,7 +7,7 @@ export interface ISlot extends Document {
   endTime: Date;
   price: number;
   sport: string;
-  sectionName: string;
+  section: mongoose.Types.ObjectId;
   duration: number;
 }
 
@@ -37,7 +37,7 @@ const slotSchema = new Schema<ISlot>({
     type: String,
     required: true,
   },
-  sectionName: {
+  section: {
     type: Schema.Types.ObjectId,
     ref: 'Section',
     required: true,
