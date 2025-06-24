@@ -1,21 +1,6 @@
-<<<<<<< HEAD
+import { Routes, Route } from "react-router-dom";
 import GeneralNavbar from "./Components/Navbar/GeneralNavbar";
 import HomePage from "./Pages/HomePage";
-
-function App() {
-  return (
-    <>
-      <HomePage />
-    </>
-  );
-}
-
-export default App;
-=======
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import GeneralNavbar from './Components/Navbar/GeneralNavbar';
-import HomePage from './Pages/HomePage';
 
 const App = () => {
   return (
@@ -29,4 +14,3 @@ const App = () => {
 };
 
 export default App;
->>>>>>> 6656b1e40d599ce8f883e126306ff713973bdfcf
