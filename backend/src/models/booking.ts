@@ -4,7 +4,7 @@ export interface IBooking extends Document {
   userId: mongoose.Types.ObjectId;
   slotId: mongoose.Types.ObjectId;
   venueId: mongoose.Types.ObjectId;
-  sectionName:  mongoose.Types.ObjectId;
+  section: mongoose.Types.ObjectId;
   status: 'booked' | 'cancelled' | 'completed';
   paymentStatus: 'paid' | 'pending' | 'failed';
   transactionId?: string;
@@ -27,7 +27,7 @@ const bookingSchema = new Schema<IBooking>({
     ref: 'Venue',
     required: true,
   },
-  sectionName: {
+  section: {
     type: Schema.Types.ObjectId,
     ref: 'Section',
     required: true,
