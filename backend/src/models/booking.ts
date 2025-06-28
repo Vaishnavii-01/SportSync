@@ -4,7 +4,7 @@ export interface IBooking extends Document {
   userId: mongoose.Types.ObjectId;
   slotId: mongoose.Types.ObjectId;
   venueId: mongoose.Types.ObjectId;
-  sectionName: string;
+  sectionName:  mongoose.Types.ObjectId;
   status: 'booked' | 'cancelled' | 'completed';
   paymentStatus: 'paid' | 'pending' | 'failed';
   transactionId?: string;
