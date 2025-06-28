@@ -1,340 +1,430 @@
-import React from "react";
-import "../styles/HomePage.css";
+import {
+  Star,
+  Users,
+  Calendar,
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+} from "lucide-react";
 
 const HomePage = () => {
-  const popularVenues = [
-    {
-      id: 1,
-      name: "Elite Tennis Courts",
-      sport: "Tennis",
-      location: "Downtown",
-      rating: 4.8,
-      price: "₹1,200/hr",
-      features: ["Floodlights", "AC Changing Rooms", "Pro Shop"],
-    },
-    {
-      id: 2,
-      name: "Champions Football Ground",
-      sport: "Football",
-      location: "South Mumbai",
-      rating: 4.9,
-      price: "₹2,500/hr",
-      features: ["Natural Grass", "Parking", "Floodlights"],
-    },
-    {
-      id: 3,
-      name: "Ace Badminton Arena",
-      sport: "Badminton",
-      location: "Andheri",
-      rating: 4.7,
-      price: "₹800/hr",
-      features: ["AC Courts", "Equipment Rental", "Cafeteria"],
-    },
-    {
-      id: 4,
-      name: "Slam Basketball Court",
-      sport: "Basketball",
-      location: "Bandra",
-      rating: 4.6,
-      price: "₹1,500/hr",
-      features: ["Indoor Court", "Scoreboard", "Locker Rooms"],
-    },
-    {
-      id: 5,
-      name: "Precision Cricket Nets",
-      sport: "Cricket",
-      location: "Powai",
-      rating: 4.8,
-      price: "₹1,000/hr",
-      features: ["Bowling Machine", "Turf Wicket", "Coaching"],
-    },
-    {
-      id: 6,
-      name: "Splash Swimming Pool",
-      sport: "Swimming",
-      location: "Juhu",
-      rating: 4.9,
-      price: "₹600/hr",
-      features: ["Olympic Size", "Heated Pool", "Jacuzzi"],
-    },
-  ];
-
   const sports = [
-    { name: "Tennis", icon: "🎾", count: "24 venues" },
-    { name: "Football", icon: "⚽", count: "18 venues" },
-    { name: "Basketball", icon: "🏀", count: "15 venues" },
-    { name: "Badminton", icon: "🏸", count: "32 venues" },
-    { name: "Cricket", icon: "🏏", count: "12 venues" },
-    { name: "Swimming", icon: "🏊", count: "8 venues" },
-    { name: "Volleyball", icon: "🏐", count: "9 venues" },
-    { name: "Table Tennis", icon: "🏓", count: "14 venues" },
+    { name: "Tennis", venues: "15 venues", icon: "🎾", color: "bg-pink-100" },
+    { name: "Football", venues: "8 venues", icon: "⚽", color: "bg-blue-100" },
+    {
+      name: "Basketball",
+      venues: "12 venues",
+      icon: "🏀",
+      color: "bg-orange-100",
+    },
+    {
+      name: "Badminton",
+      venues: "20 venues",
+      icon: "🏸",
+      color: "bg-green-100",
+    },
+    { name: "Cricket", venues: "6 venues", icon: "🏏", color: "bg-red-100" },
+    { name: "Swimming", venues: "4 venues", icon: "🏊", color: "bg-blue-100" },
+    {
+      name: "Volleyball",
+      venues: "10 venues",
+      icon: "🏐",
+      color: "bg-purple-100",
+    },
+    {
+      name: "Table Tennis",
+      venues: "18 venues",
+      icon: "🏓",
+      color: "bg-pink-100",
+    },
   ];
 
-  const features = [
+  const venues = [
     {
-      icon: "⚡",
-      title: "Instant Booking",
-      description:
-        "Book your favorite venue in just a few clicks. Real-time availability and instant confirmation.",
+      name: "Elite Tennis Courts",
+      price: "₹1,200/hr",
+      rating: 4.8,
+      location: "Bandra",
+      facilities: ["Floodlights", "AC Changing Rooms", "Pro Shop"],
+      icon: "🎾",
+      color: "bg-pink-100",
     },
     {
-      icon: "✓",
-      title: "Verified Venues",
-      description:
-        "All venues are verified and rated by our community of sports enthusiasts. Quality guaranteed.",
+      name: "Champions Football Ground",
+      price: "₹2,500/hr",
+      rating: 4.9,
+      location: "Andheri",
+      facilities: ["Natural Grass", "Parking", "Floodlights"],
+      icon: "⚽",
+      color: "bg-blue-100",
     },
     {
-      icon: "★",
-      title: "Best Prices",
-      description:
-        "Get exclusive deals on premium sports venues across the city. No hidden charges.",
+      name: "Ace Badminton Arena",
+      price: "₹800/hr",
+      rating: 4.7,
+      location: "Powai",
+      facilities: ["AC Courts", "Equipment Rental", "Cafeteria"],
+      icon: "🏸",
+      color: "bg-green-100",
+    },
+    {
+      name: "Slam Basketball Court",
+      price: "₹1,500/hr",
+      rating: 4.6,
+      location: "Malad",
+      facilities: ["Indoor Court", "Scoreboard"],
+      icon: "🏀",
+      color: "bg-orange-100",
+    },
+    {
+      name: "Precision Cricket Nets",
+      price: "₹1,000/hr",
+      rating: 4.5,
+      location: "Goregaon",
+      facilities: ["Bowling Machine", "Net Wicket", "Coaching"],
+      icon: "🏏",
+      color: "bg-red-100",
+    },
+    {
+      name: "Splash Swimming Pool",
+      price: "₹600/hr",
+      rating: 4.8,
+      location: "Juhu",
+      facilities: ["Olympic Size", "Heated Pool", "Jacuzzi"],
+      icon: "🏊",
+      color: "bg-blue-100",
     },
   ];
 
   return (
-    <div className="app">
+    <div className="min-h-screen" style={{ backgroundColor: "#FFFFF8" }}>
       {/* Hero Section */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-text animate-fadeIn">
-              <h1 className="hero-title animate-fadeIn delay-200">
-                Book Your Favorite
+      <div className="py-16 px-4" style={{ backgroundColor: "#FFFFF8" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-5xl font-bold text-black mb-6 leading-tight">
+                Book Your
+                <br />
+                Favorite
                 <br />
                 Sports Venue
                 <br />
                 Instantly!
               </h1>
-              <p className="hero-subtitle animate-fadeIn delay-300">
+              <p className="text-gray-600 mb-8 text-lg">
                 Find and book the perfect sports venue for your next game or
                 event with ease. Browse through a wide selection of venues and
                 secure your spot in just a few clicks.
               </p>
-              <div className="hero-buttons animate-fadeIn delay-400">
-                <button className="btn btn-primary btn-large">
-                  <span>📅</span>
-                  <span>Book Now</span>
-                  <span>→</span>
+              <div className="flex gap-4">
+                <button className="bg-black text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                  📍 Book Now
                 </button>
-                <a href="#demo" className="btn btn-secondary btn-large">
-                  <span>▶</span>
-                  <span>Watch Demo</span>
-                </a>
-              </div>
-              <div className="hero-stats animate-fadeIn delay-500">
-                <div className="stat">
-                  <div className="stat-icon">🏟️</div>
-                  <div>
-                    <div className="stat-number">500+</div>
-                    <div className="stat-label">Venues</div>
-                  </div>
-                </div>
-                <div className="stat">
-                  <div className="stat-icon">👥</div>
-                  <div>
-                    <div className="stat-number">10K+</div>
-                    <div className="stat-label">Happy Users</div>
-                  </div>
-                </div>
-                <div className="stat">
-                  <div className="stat-icon">🏅</div>
-                  <div>
-                    <div className="stat-number">15+</div>
-                    <div className="stat-label">Sports</div>
-                  </div>
-                </div>
+                <button className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                  ▶ Watch Demo
+                </button>
               </div>
             </div>
-            <div className="hero-visual animate-fadeIn delay-300">
-              <div className="hero-card floating">
-                <div className="hero-card-image">
-                  <div className="hero-card-badge">Available Now</div>
-                  🏀
+            <div className="relative">
+              <div className="bg-gray-100 rounded-2xl p-8 relative">
+                <div className="absolute top-4 right-4 bg-black text-white px-3 py-1 rounded-full text-sm">
+                  Available Today
                 </div>
-                <div className="hero-card-content">
-                  <div className="hero-card-info">
-                    <h3>Premium Sports Complex</h3>
-                    <p>
-                      <span>📍</span>
-                      <span>Bandra, Mumbai</span>
-                    </p>
-                  </div>
-                  <div className="hero-card-rating">
-                    <span>★</span>
-                    <span>4.9</span>
-                  </div>
+                <div className="text-6xl mb-4">🏀</div>
+                <h3 className="text-xl font-bold mb-2">
+                  Premium Sports Complex
+                </h3>
+                <div className="flex items-center mb-4">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                  <span className="ml-1 text-sm font-medium">4.9</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Sports Categories */}
-      <section className="sports-section" id="sports">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Popular Sports</h2>
-            <p className="section-subtitle">
+          {/* Stats */}
+          <div className="flex gap-8 mt-12">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-gray-600" />
+              <span className="font-bold text-2xl">500+</span>
+              <span className="text-gray-600">Users</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <span className="font-bold text-2xl">10K+</span>
+              <span className="text-gray-600">Bookings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-gray-600" />
+              <span className="font-bold text-2xl">15+</span>
+              <span className="text-gray-600">Years</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Popular Sports Section */}
+      <div className="py-16 px-4 " style={{ backgroundColor: "#FFFFF8" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-black mb-4">
+              Popular Sports
+            </h2>
+            <p className="text-gray-600">
               Choose from a variety of sports and find the perfect venue for
               your activity
             </p>
           </div>
-          <div className="sports-grid">
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {sports.map((sport, index) => (
-              <div
-                key={index}
-                className="sport-card animate-fadeIn"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <span className="sport-icon">{sport.icon}</span>
-                <h3 className="sport-name">{sport.name}</h3>
-                <p className="sport-count">{sport.count}</p>
+              <div key={index} className="text-center group cursor-pointer">
+                <div
+                  className={`w-20 h-20 ${sport.color} rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}
+                >
+                  <span className="text-3xl">{sport.icon}</span>
+                </div>
+                <h3 className="font-semibold text-black mb-1">{sport.name}</h3>
+                <p className="text-sm text-gray-500">{sport.venues}</p>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Popular Venues */}
-      <section className="venues-section" id="venues">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Explore Popular Venues</h2>
-            <p className="section-subtitle">
+      {/* Popular Venues Section */}
+      <div className="py-16 px-4" style={{ backgroundColor: "#FFFFF8" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-black mb-4">
+              Explore Popular Venues
+            </h2>
+            <p className="text-gray-600">
               Discover top-rated venues in your area with excellent facilities
               and amenities
             </p>
           </div>
-          <div className="venues-grid">
-            {popularVenues.map((venue, index) => (
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {venues.map((venue, index) => (
               <div
-                key={venue.id}
-                className="venue-card animate-fadeIn"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                key={index}
+                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow"
               >
-                <div className="venue-image">
-                  {venue.sport === "Tennis" && "🎾"}
-                  {venue.sport === "Football" && "⚽"}
-                  {venue.sport === "Badminton" && "🏸"}
-                  {venue.sport === "Basketball" && "🏀"}
-                  {venue.sport === "Cricket" && "🏏"}
-                  {venue.sport === "Swimming" && "🏊"}
-                  <div className="venue-rating">
-                    <span>★</span>
-                    <span>{venue.rating}</span>
+                <div className="flex justify-between items-start mb-4">
+                  <div
+                    className={`w-12 h-12 ${venue.color} rounded-xl flex items-center justify-center`}
+                  >
+                    <span className="text-2xl">{venue.icon}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="text-sm font-medium">{venue.rating}</span>
                   </div>
                 </div>
-                <div className="venue-content">
-                  <div className="venue-header">
-                    <div className="venue-info">
-                      <h3>{venue.name}</h3>
-                      <div className="venue-location">
-                        <span>📍</span>
-                        <span>{venue.location}</span>
-                      </div>
-                    </div>
-                    <div className="venue-price">
-                      <div className="venue-price-amount">{venue.price}</div>
-                      <div className="venue-sport">{venue.sport}</div>
-                    </div>
-                  </div>
-                  <div className="venue-features">
-                    {venue.features.map((feature, index) => (
-                      <span key={index} className="feature-tag">
-                        {feature}
-                      </span>
-                    ))}
-                  </div>
-                  <button className="venue-book-btn">Book Now</button>
+
+                <h3 className="text-xl font-bold text-black mb-2">
+                  {venue.name}
+                </h3>
+                <p className="text-2xl font-bold text-black mb-3">
+                  {venue.price}
+                </p>
+
+                <div className="flex items-center gap-1 mb-4">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">
+                    {venue.location}
+                  </span>
                 </div>
+
+                <div className="space-y-1 mb-6">
+                  {venue.facilities.map((facility, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-block text-xs text-gray-600 mr-3"
+                    >
+                      {facility}
+                    </span>
+                  ))}
+                </div>
+
+                <button className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                  Book Now
+                </button>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Features Section */}
-      <section className="features-section" id="features">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Why Choose SportSync?</h2>
-            <p className="section-subtitle">
+      {/* Why Choose SportSync Section */}
+      <div className="py-16 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-black mb-4">
+              Why Choose SportSync?
+            </h2>
+            <p className="text-gray-600">
               We make booking sports venues simple, fast, and reliable
             </p>
           </div>
-          <div className="features-grid">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="feature-card animate-fadeIn"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="feature-icon">{feature.icon}</div>
-                <h3 className="feature-title">{feature.title}</h3>
-                <p className="feature-description">{feature.description}</p>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-white" />
               </div>
-            ))}
+              <h3 className="text-xl font-bold text-black mb-3">
+                Instant Booking
+              </h3>
+              <p className="text-gray-600">
+                Book your favorite sports venue with just a few clicks.
+                Real-time availability and instant confirmations.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-black mb-3">
+                Verified Venues
+              </h3>
+              <p className="text-gray-600">
+                All venues are verified and rated by our community of sports
+                enthusiasts. Quality guaranteed.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-black mb-3">Best Prices</h3>
+              <p className="text-gray-600">
+                Get competitive prices on premium venues across the city. No
+                hidden costs or booking fees.
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-section">
-              <div className="footer-logo">
-                <div className="footer-logo-icon">🏆</div>
-                <span style={{ fontSize: "22px", fontWeight: "bold" }}>
-                  SportSync
-                </span>
+      <footer className="bg-black text-white py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center mr-3">
+                  <div className="w-4 h-4 border-2 border-black rounded-full relative">
+                    <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-black rounded-full"></div>
+                  </div>
+                </div>
+                <span className="text-xl font-bold">SportSync</span>
               </div>
-              <p>
-                Your trusted partner for booking sports venues across Mumbai.
-                Find, book, and play at the best sports facilities in the city.
+              <p className="text-gray-400 mb-4">
+                Your trusted partner for booking sports venues. Play smart, book
+                smarter with SportSync.
               </p>
-              <div className="footer-social">
-                <a href="#" className="social-icon">
-                  f
-                </a>
-                <a href="#" className="social-icon">
-                  t
-                </a>
-                <a href="#" className="social-icon">
-                  in
-                </a>
-                <a href="#" className="social-icon">
-                  ig
-                </a>
+              <div className="flex gap-3">
+                <Facebook className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
+                <Twitter className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
+                <Instagram className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
+                <Youtube className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
               </div>
             </div>
-            <div className="footer-section">
-              <h4>Quick Links</h4>
-              <a href="#home">Home</a>
-              <a href="#venues">Venues</a>
-              <a href="#sports">Sports</a>
-              <a href="#features">Features</a>
-              <a href="#about">About</a>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Venues
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Sports
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Booking
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    About
+                  </a>
+                </li>
+              </ul>
             </div>
-            <div className="footer-section">
-              <h4>Support</h4>
-              <a href="#help">Help Center</a>
-              <a href="#contact">Contact Us</a>
-              <a href="#faq">FAQs</a>
-              <a href="#terms">Terms of Service</a>
-              <a href="#privacy">Privacy Policy</a>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Privacy Policy
+                  </a>
+                </li>
+              </ul>
             </div>
-            <div className="footer-section">
-              <h4>Contact Info</h4>
-              <p>📧 hello@sportsync.com</p>
-              <p>📞 +91 98765 43210</p>
-              <p>📍 Mumbai, Maharashtra</p>
-              <p>🕒 Mon-Sun: 7:00 AM - 10:00 PM</p>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
+              <div className="space-y-3 text-gray-400">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  <span>hello@sportsync.com</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  <span>+91 98765 43210</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>Mumbai, Maharashtra</span>
+                </div>
+                <p className="text-sm">Mon-Sat: 9:00 AM - 10:00 PM</p>
+              </div>
             </div>
           </div>
-          <div className="footer-bottom">
-            <p>&copy; 2025 SportSync. All rights reserved.</p>
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>© 2024 SportSync. All rights reserved.</p>
           </div>
         </div>
       </footer>
