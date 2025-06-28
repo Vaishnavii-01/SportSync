@@ -1,27 +1,105 @@
+import React from "react";
+import { Link } from "react-router-dom";
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import '../../styles/GeneralNavbar.css';
-
-const GeneralNavbar = () => {
+const GeneralNavbar: React.FC = () => {
   return (
-    <nav className="navbar">
-      <div className="logo-section">
-        <img src="/logo.png" alt="logo" className="logo" />
-      </div>
-      <ul className="nav-links">
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/explore">Explore Venues</Link></li>
-        <li><Link to="/contact">Contact</Link></li>
-        <li><Link to="/about">About Us</Link></li>
-      </ul>
-      <div className="nav-buttons">
-        <button className="btn white-btn">Sign In</button>
-        <button className="btn white-btn">Log In</button>
-      </div>
-    </nav>
+    <>
+      <style>
+        {`
+body, html {
+  margin: 0;
+  padding: 0;
+}
+
+.navbar {
+  width: 100%;
+  background-color: #000;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 30px;
+  box-sizing: border-box;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 55px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+  list-style: none;
+  font-weight: 500;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links li {
+  cursor: pointer;
+}
+
+.nav-links li a {
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+}
+
+.nav-links li a:hover {
+  color: #ddd;
+}
+
+.nav-buttons .btn {
+  margin-left: 10px;
+  padding: 8px 14px;
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.nav-buttons .btn:hover {
+  background-color: #e0e0e0;
+}
+`}
+      </style>
+      <nav className="navbar">
+        <div className="logo-section">
+          <img src="/logo.png" alt="logo" className="logo" />
+        </div>
+        <ul className="nav-links">
+          <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li>
+            <Link to="/explore">Explore Venues</Link>
+          </li>
+          <li>
+            <Link to="/contact">Contact</Link>
+          </li>
+          <li>
+            <Link to="/about">About Us</Link>
+          </li>
+        </ul>
+        <div className="nav-buttons">
+          <button className="btn white-btn">
+            <Link to="/signin">Sign In</Link>
+          </button>
+          <button className="btn white-btn">
+            <Link to="/login">Log In</Link>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 };
 
 export default GeneralNavbar;
-
