@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISlot extends Document {
-  venueId: mongoose.Types.ObjectId;
+  venueId: mongoose.Types.ObjectId | IVenue;
   date: Date;
   startTime: Date;
   endTime: Date;
@@ -9,6 +9,12 @@ export interface ISlot extends Document {
   sport: string;
   section: mongoose.Types.ObjectId;
   duration: number;
+}
+
+interface IVenue {
+  _id: mongoose.Types.ObjectId;
+  owner: mongoose.Types.ObjectId;
+  // other venue fields you might need
 }
 
 const slotSchema = new Schema<ISlot>({

@@ -1,5 +1,5 @@
 //What to do when a request comes (Create/Update/View logic per route)
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, request } from 'express';
 import Slot from '../models/slot';
 import Venue from '../models/venue';
 import Section from '../models/section';
@@ -8,11 +8,15 @@ import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { generateSlots } from '../utils/slotGenerator';
 
+//const { slotId } = request.params;
+const TEMP_OWNER_ID = '660b5b6e8c1d2470b4c7d8e3';
 export const createSlots = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { venueId, startDate, endDate, days, timings, duration, sports } = req.body;
   
   // 1. Verify venue exists and belongs to the owner
-  const venue = await Venue.findOne({ _id: venueId, owner: req.user.id });
+  const venue = await Venue.findOne({ _id: venueId, owner: TEMP_OWNER_ID });
+
+  /// later replace TEMP_OWNER_ID with req.user.id
   if (!venue) {
     return next(new AppError('No venue found with that ID', 404));
   }
@@ -58,7 +62,7 @@ export const getSlots = catchAsync(async (req: Request, res: Response, next: Nex
   
   if (venueId) {
     // Verify venue belongs to owner
-    const venue = await Venue.findOne({ _id: venueId, owner: req.user.id });
+    const venue = await Venue.findOne({ _id: venueId, owner: TEMP_OWNER_ID });
     if (!venue) {
       return next(new AppError('No venue found with that ID', 404));
     }
@@ -108,9 +112,9 @@ export const blockSlot = catchAsync(async (req: Request, res: Response, next: Ne
     return next(new AppError('No slot found with that ID', 404));
   }
   
-  if (slot.venueId.owner.toString() !== req.user.id) {
-    return next(new AppError('You are not authorized to block this slot', 403));
-  }
+  // if (slot.venueId.owner.toString() !== TEMP_OWNER_ID) {
+  //   return next(new AppError('You are not authorized to block this slot', 403));
+  // }
   
   // 2. Block the slot (implementation depends on your business logic)
   // For example, you might delete it or mark it as unavailable

@@ -3,7 +3,10 @@ import { Request, Response, NextFunction } from 'express';
 import Venue from '../models/venue';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
-import { IVenue } from '../models/venue';
+//import { IVenue } from '../models/venue';
+
+// TEMPORARY ID
+const TEMP_OWNER_ID = '660b5b6e8c1d2470b4c7d8e3'; // Use a real ID from your DB
 
 export const createVenue = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const newVenue = await Venue.create(req.body);
@@ -16,7 +19,7 @@ export const createVenue = catchAsync(async (req: Request, res: Response, next: 
 });
 
 export const getVenues = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const venues = await Venue.find({ owner: req.user.id });
+  const venues = await Venue.find({ owner: TEMP_OWNER_ID });
   res.status(200).json({
     status: 'success',
     results: venues.length,
@@ -27,8 +30,8 @@ export const getVenues = catchAsync(async (req: Request, res: Response, next: Ne
 });
 
 export const getVenue = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const venue = await Venue.findOne({ _id: req.params.id, owner: req.user.id });
-  
+  const venue = await Venue.findOne({ _id: req.params.id, owner: TEMP_OWNER_ID });
+  //REPLACE WITH req.user.id
   if (!venue) {
     return next(new AppError('No venue found with that ID', 404));
   }
@@ -43,7 +46,7 @@ export const getVenue = catchAsync(async (req: Request, res: Response, next: Nex
 
 export const updateVenue = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const venue = await Venue.findOneAndUpdate(
-    { _id: req.params.id, owner: req.user.id },
+    { _id: req.params.id, owner: TEMP_OWNER_ID },
     req.body,
     { new: true, runValidators: true }
   );
@@ -61,7 +64,7 @@ export const updateVenue = catchAsync(async (req: Request, res: Response, next: 
 });
 
 export const deleteVenue = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const venue = await Venue.findOneAndDelete({ _id: req.params.id, owner: req.user.id });
+  const venue = await Venue.findOneAndDelete({ _id: req.params.id, owner: TEMP_OWNER_ID});
   
   if (!venue) {
     return next(new AppError('No venue found with that ID', 404));
