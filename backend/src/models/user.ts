@@ -1,43 +1,42 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
+import validator from 'validator';
+import bcrypt from 'bcrypt';
 
-// Interface for TypeScript
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   phone: string;
-  role: 'user' | 'vendor' ;
+  role: 'user' | 'vendor';
   createdAt: Date;
   updatedAt: Date;
-  // comparePassword(candidatePassword: string): Promise<boolean>; // Uncomment when using bcrypt
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-// Schema definition
 const userSchema: Schema<IUser> = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please provide your name'],
+      required: true,
       trim: true,
-      maxlength: [50, 'Name cannot be more than 50 characters'],
+      maxlength: 50,
     },
     email: {
       type: String,
-      required: [true, 'Please provide your email'],
+      required: true,
       unique: true,
       lowercase: true,
-      // validate: [validator.isEmail, 'Please provide a valid email'], // Uncomment when using validator
+      validate: [validator.isEmail, 'Invalid email format'],
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
-      minlength: [8, 'Password must be at least 8 characters'],
-      select: false, // Never show password in queries
+      required: true,
+      minlength: 8,
+      select: false,
     },
     phone: {
       type: String,
-      required: [true, 'Please provide your phone number'],
-      // Add regex validation here later if needed
+      required: true,
     },
     role: {
       type: String,
@@ -45,15 +44,9 @@ const userSchema: Schema<IUser> = new Schema(
       default: 'user',
     },
   },
-  {
-    timestamps: true, // Automatically adds createdAt and updatedAt
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: true }
 );
 
-// Hash password before saving (commented out until bcrypt is added)
-/*
 userSchema.pre<IUser>('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
@@ -63,17 +56,10 @@ userSchema.pre<IUser>('save', async function (next) {
     next(err as Error);
   }
 });
-*/
 
-// Compare passwords method (commented out)
-/*
-userSchema.methods.comparePassword = async function (
-  candidatePassword: string
-): Promise<boolean> {
-  return await bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function (candidatePassword: string) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
-*/
 
-// Export the model
 const User: Model<IUser> = mongoose.model<IUser>('User', userSchema);
 export default User;
