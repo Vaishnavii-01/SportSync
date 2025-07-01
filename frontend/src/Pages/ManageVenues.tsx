@@ -1,4 +1,4 @@
-import { useState , useEffect } from "react";
+import { useState, useEffect } from "react";
 import VOFooter from "../Components/Footer/VOFooter";
 import {
   FaPlus,
@@ -10,11 +10,11 @@ import {
   FaUsers,
   FaEye,
   FaCalendarAlt,
+  FaSave,
   FaChartBar,
 } from "react-icons/fa";
 
-
-//imports for Connecting Frontend to Backend
+// Imports for Connecting Frontend to Backend
 import { 
   getVenues, 
   getVenueById, 
@@ -22,8 +22,6 @@ import {
   updateVenue, 
   deleteVenue 
 } from "../../services/venueService";
-
-
 
 interface Address {
   street: string;
@@ -57,6 +55,7 @@ const ManageVenues = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch venues on component mount
   useEffect(() => {
@@ -87,27 +86,48 @@ const ManageVenues = () => {
     }
   };
 
-  const handleSubmitVenue = async (e: React.FormEvent, formData: any) => {
+  const handleSubmitVenue = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    
+    const formData = new FormData(e.currentTarget);
+    
+    const venueData = {
+      name: formData.get('venueName') as string,
+      description: formData.get('description') as string,
+      sports: (formData.get('sports') as string).split(',').map((s: string) => s.trim()),
+      address: {
+        street: formData.get('street') as string,
+        city: formData.get('city') as string,
+        state: formData.get('state') as string,
+        country: formData.get('country') as string,
+        zipCode: formData.get('zipCode') as string,
+      },
+      contactNumber: formData.get('contactNumber') as string,
+      openingTime: formData.get('openingTime') as string,
+      closingTime: formData.get('closingTime') as string,
+      isActive: formData.get('status') === 'true',
+      owner: editingVenue?.owner || '6863d1cfa8d1e82535f71e3e'
+    };
     
     try {
       if (editingVenue) {
-        // Update existing venue
-        const updatedVenue = await updateVenue(editingVenue._id, formData);
+        const updatedVenue = await updateVenue(editingVenue._id, venueData);
         setVenues(venues.map(v => v._id === editingVenue._id ? updatedVenue : v));
       } else {
-        // Create new venue
-        const newVenue = await createVenue(formData);
+        const newVenue = await createVenue(venueData);
         setVenues([...venues, newVenue]);
       }
       setShowAddModal(false);
+      setEditingVenue(null);
     } catch (err) {
       setError(editingVenue ? 'Failed to update venue' : 'Failed to create venue');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  
 
   const handleEditVenue = (venue: Venue) => {
     setEditingVenue(venue);
@@ -122,6 +142,7 @@ const ManageVenues = () => {
   const closeModal = () => {
     setShowAddModal(false);
     setEditingVenue(null);
+    setError(null);
   };
 
   const activeVenues = venues.filter((v) => v.isActive).length;
@@ -130,6 +151,17 @@ const ManageVenues = () => {
   const formatAddress = (address: Address) => {
     return `${address.city}, ${address.state}`;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading venues...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -248,116 +280,131 @@ const ManageVenues = () => {
         {/* Enhanced Venues Grid/List */}
         <div className="px-6 sm:px-12 lg:px-20 pb-16">
           <div className="max-w-7xl mx-auto">
-            <div
-              className={`gap-6 ${
-                viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-                  : "flex flex-col"
-              }`}
-            >
-              {venues.map((venue) => (
-                <div
-                  key={venue._id}
-                  className={`group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${
-                    viewMode === "list" ? "flex" : ""
-                  }`}
+            {venues.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🏟️</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No venues found</h3>
+                <p className="text-gray-500 mb-6">Get started by adding your first venue</p>
+                <button
+                  onClick={handleAddVenue}
+                  className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
                 >
-                  {/* Venue Header */}
+                  <FaPlus />
+                  <span>Add First Venue</span>
+                </button>
+              </div>
+            ) : (
+              <div
+                className={`gap-6 ${
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                    : "flex flex-col"
+                }`}
+              >
+                {venues.map((venue) => (
                   <div
-                    className={`${
-                      viewMode === "list" ? "w-48 flex-shrink-0" : ""
-                    } bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-center`}
+                    key={venue._id}
+                    className={`group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${
+                      viewMode === "list" ? "flex" : ""
+                    }`}
                   >
-                    <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-200">
-                      ⚽
+                    {/* Venue Header */}
+                    <div
+                      className={`${
+                        viewMode === "list" ? "w-48 flex-shrink-0" : ""
+                      } bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-center`}
+                    >
+                      <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-200">
+                        ⚽
+                      </div>
+                      <h3 className="text-xl font-bold text-black mb-2">
+                        {venue.name}
+                      </h3>
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {venue.sports.slice(0, 2).map((sport, idx) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full"
+                          >
+                            {sport}
+                          </span>
+                        ))}
+                        {venue.sports.length > 2 && (
+                          <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
+                            +{venue.sports.length - 2}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-black mb-2">
-                      {venue.name}
-                    </h3>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {venue.sports.slice(0, 2).map((sport, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full"
-                        >
-                          {sport}
-                        </span>
-                      ))}
-                      {venue.sports.length > 2 && (
-                        <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
-                          +{venue.sports.length - 2}
-                        </span>
-                      )}
+
+                    {/* Venue Details */}
+                    <div className="flex-1 p-6 space-y-4">
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
+                        {venue.description}
+                      </p>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3 text-gray-600">
+                          <FaMapMarkerAlt className="text-gray-500 text-sm" />
+                          <span className="text-sm font-medium">
+                            {formatAddress(venue.address)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-3 text-gray-600">
+                          <FaClock className="text-gray-500 text-sm" />
+                          <span className="text-sm">
+                            {venue.openingTime} - {venue.closingTime}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-3 text-gray-600">
+                          <FaPhone className="text-gray-500 text-sm" />
+                          <span className="text-sm font-medium">
+                            {venue.contactNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Status and Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              venue.isActive ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                          <span
+                            className={`text-sm font-medium ${
+                              venue.isActive ? "text-green-700" : "text-red-700"
+                            }`}
+                          >
+                            {venue.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditVenue(venue)}
+                            className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Edit venue"
+                          >
+                            <FaEdit className="text-sm" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteVenue(venue._id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete venue"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Venue Details */}
-                  <div className="flex-1 p-6 space-y-4">
-                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">
-                      {venue.description}
-                    </p>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <FaMapMarkerAlt className="text-gray-500 text-sm" />
-                        <span className="text-sm font-medium">
-                          {formatAddress(venue.address)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <FaClock className="text-gray-500 text-sm" />
-                        <span className="text-sm">
-                          {venue.openingTime} - {venue.closingTime}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-3 text-gray-600">
-                        <FaPhone className="text-gray-500 text-sm" />
-                        <span className="text-sm font-medium">
-                          {venue.contactNumber}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status and Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            venue.isActive ? "bg-green-500" : "bg-red-500"
-                          }`}
-                        />
-                        <span
-                          className={`text-sm font-medium ${
-                            venue.isActive ? "text-green-700" : "text-red-700"
-                          }`}
-                        >
-                          {venue.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEditVenue(venue)}
-                          className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Edit venue"
-                        >
-                          <FaEdit className="text-sm" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVenue(venue._id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete venue"
-                        >
-                          <FaTrash className="text-sm" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -405,31 +452,8 @@ const ManageVenues = () => {
               </div>
 
               {/* Modal Body */}
-              <div className="overflow-y-auto max-h-[calc(90vh-180px)] px-8 py-8">
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = {
-                      name: e.currentTarget.venueName.value,
-                      description: e.currentTarget.description.value,
-                      sports: e.currentTarget.sports.value.split(',').map((s: string) => s.trim()),
-                      address: {
-                        street: e.currentTarget.street.value,
-                        city: e.currentTarget.city.value,
-                        state: e.currentTarget.state.value,
-                        country: e.currentTarget.country.value,
-                        zipCode: e.currentTarget.zipCode.value,
-                        // coordinates: editingVenue?.address?.coordinates || undefined
-                      },
-                      contactNumber: e.currentTarget.contactNumber.value,
-                      openingTime: e.currentTarget.openingTime.value,
-                      closingTime: e.currentTarget.closingTime.value,
-                      isActive: e.currentTarget.status.value === 'true',
-                      owner: editingVenue?.owner || 'current-user-id' // Replace with actual user ID from auth
-                    };
-                    handleSubmitVenue(e, formData);
-                  }}
-                className="space-y-10">
+              <div className="overflow-y-auto max-h-[calc(90vh-240px)]">
+                <form onSubmit={handleSubmitVenue} className="px-8 py-8 space-y-10">
                   {/* Basic Information */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 pb-3 border-b border-gray-200">
@@ -453,6 +477,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="venueName"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="Enter venue name"
                           defaultValue={editingVenue?.name || ""}
@@ -466,6 +492,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="sports"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="Football, Cricket, Basketball"
                           defaultValue={editingVenue?.sports.join(", ") || ""}
@@ -481,6 +509,8 @@ const ManageVenues = () => {
                         Description <span className="text-red-500">*</span>
                       </label>
                       <textarea
+                        name="description"
+                        required
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white resize-none"
                         rows={4}
                         placeholder="Describe your venue, facilities, and what makes it special"
@@ -511,6 +541,8 @@ const ManageVenues = () => {
                       </label>
                       <input
                         type="text"
+                        name="street"
+                        required
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                         placeholder="123 Main Street, Building Name"
                         defaultValue={editingVenue?.address.street || ""}
@@ -524,6 +556,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="city"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="Mumbai"
                           defaultValue={editingVenue?.address.city || ""}
@@ -536,6 +570,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="state"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="Maharashtra"
                           defaultValue={editingVenue?.address.state || ""}
@@ -550,6 +586,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="country"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="India"
                           defaultValue={editingVenue?.address.country || ""}
@@ -562,6 +600,8 @@ const ManageVenues = () => {
                         </label>
                         <input
                           type="text"
+                          name="zipCode"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="400001"
                           defaultValue={editingVenue?.address.zipCode || ""}
@@ -586,13 +626,15 @@ const ManageVenues = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
                           Contact Number <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
+                          name="contactNumber"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                           placeholder="+91 9876543210"
                           defaultValue={editingVenue?.contactNumber || ""}
@@ -606,9 +648,10 @@ const ManageVenues = () => {
                           Opening Time <span className="text-red-500">*</span>
                         </label>
                         <input
-                          type="text"
+                          type="time"
+                          name="openingTime"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                          placeholder="08:00"
                           defaultValue={editingVenue?.openingTime || ""}
                         />
                       </div>
@@ -618,9 +661,10 @@ const ManageVenues = () => {
                           Closing Time <span className="text-red-500">*</span>
                         </label>
                         <input
-                          type="text"
+                          type="time"
+                          name="closingTime"
+                          required
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                          placeholder="22:00"
                           defaultValue={editingVenue?.closingTime || ""}
                         />
                       </div>
@@ -631,6 +675,7 @@ const ManageVenues = () => {
                         Venue Status
                       </label>
                       <select
+                        name="status"
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                         defaultValue={editingVenue?.isActive ? "true" : "false"}
                       >
@@ -643,30 +688,88 @@ const ManageVenues = () => {
                       </select>
                     </div>
                   </div>
-                </form>
-              </div>
 
-              {/* Modal Footer */}
-              <div className="bg-gray-50 px-8 py-6 rounded-b-3xl border-t border-gray-200">
-                <div className="flex gap-4 justify-end">
-                  <button
-                    onClick={closeModal}
-                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 hover:border-gray-400 transition-all duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={closeModal}
-                    className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    {editingVenue ? "Update Venue" : "Create Venue"}
-                  </button>
+                  {/* Modal Footer - Inside Form */}
+                    <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
+                      {/* Error message display */}
+                      {error && (
+                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
+                          <svg 
+                            className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                            />
+                          </svg>
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      <div className="flex gap-4 justify-end">
+                        {/* Cancel Button */}
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          disabled={isSubmitting}
+                          className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
+                            isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-100 hover:border-gray-400'
+                          }`}
+                        >
+                          Cancel
+                        </button>
+
+                        {/* Submit Button */}
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
+                            isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:bg-gray-800'
+                          }`}
+                        >
+                          {isSubmitting ? (
+                            <span className="flex items-center justify-center">
+                              <svg 
+                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                              >
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              {editingVenue ? "Updating..." : "Creating..."}
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              {editingVenue ? (
+                                <>
+                                  <FaSave className="mr-2" />
+                                  Update Venue
+                                </>
+                              ) : (
+                                <>
+                                  <FaPlus className="mr-2" />
+                                  Create Venue
+                                </>
+                              )}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
                 </div>
-              </div>
             </div>
           </div>
         )}
       </div>
+          
       <VOFooter />
     </>
   );
