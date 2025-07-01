@@ -13,7 +13,6 @@ const VenueNavbar: React.FC = () => {
       <ul className="flex-1 flex justify-center gap-10 font-medium">
         <li><Link to="/venue/dashboard" className="hover:text-gray-300">Home</Link></li>
         <li><Link to="/venue/manage" className="hover:text-gray-300">Manage Venues</Link></li>
-        <li><Link to="/venue/reports" className="hover:text-gray-300">View Reports</Link></li>
       </ul>
 
       <div className="flex items-center space-x-4 relative">

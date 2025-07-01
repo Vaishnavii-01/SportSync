@@ -1,46 +1,58 @@
-import React, {useState } from 'react';
+import React, { useState } from 'react';
 import { FaDownload } from 'react-icons/fa';
 
-interface Booking {
+interface Slot {
   id: string;
-  venue: string;
-  customer: string;
-  datetime: string;
-  amount: number;
-  status: 'Booked' | 'Pending' | 'Cancelled';
+  venueName: string;
+  sport: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  price: number;
+  duration: number;
+  status: 'Available' | 'Booked';
 }
 
 const VenueDashboard: React.FC = () => {
-  const [stats, setStats] = useState({
-    totalVenues: 6,
-    todaysBookings: 100,
-    averageRating: 4.6,
-    monthlyRevenue: 9750,
+  const [stats] = useState({
+    totalVenues: 3,
+    todaysBookings: 25,
+    averageRating: 4.8,
+    monthlyRevenue: 13500,
   });
 
-  const [bookings, setBookings] = useState<Booking[]>([
+  const [slots, setSlots] = useState<Slot[]>([
     {
-      id: '#BK01',
-      venue: 'VESIT Turf',
-      customer: 'Priya Patel',
-      datetime: 'Today, 4 PM',
-      amount: 10000,
+      id: 'SLOT01',
+      venueName: 'VESIT Turf',
+      sport: 'Football',
+      date: '2025-07-02',
+      startTime: '16:00',
+      endTime: '17:00',
+      price: 1500,
+      duration: 60,
       status: 'Booked',
     },
     {
-      id: '#BK02',
-      venue: 'Elite Pool',
-      customer: 'John Doe',
-      datetime: 'Today, 5 PM',
-      amount: 10000,
-      status: 'Pending',
+      id: 'SLOT02',
+      venueName: 'Elite Court',
+      sport: 'Badminton',
+      date: '2025-07-02',
+      startTime: '17:00',
+      endTime: '17:30',
+      price: 500,
+      duration: 30,
+      status: 'Available',
     },
     {
-      id: '#BK03',
-      venue: 'VESIT Turf',
-      customer: 'Priya Patel',
-      datetime: 'Today, 6 PM',
-      amount: 10000,
+      id: 'SLOT03',
+      venueName: 'Pool Side',
+      sport: 'Swimming',
+      date: '2025-07-02',
+      startTime: '18:00',
+      endTime: '19:00',
+      price: 800,
+      duration: 60,
       status: 'Booked',
     },
   ]);
@@ -78,32 +90,36 @@ const VenueDashboard: React.FC = () => {
           <table className="min-w-full bg-white text-sm border-separate border-spacing-y-2">
             <thead>
               <tr className="text-left text-gray-700 font-semibold">
-                <th className="px-4 py-3">Booking ID</th>
+                <th className="px-4 py-3">Slot ID</th>
                 <th className="px-4 py-3">Venue</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Date & Time</th>
-                <th className="px-4 py-3">Amount</th>
+                <th className="px-4 py-3">Sport</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3">Duration</th>
+                <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
             <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id} className="bg-[#fffaf4]">
-                  <td className="px-4 py-3 font-medium">{booking.id}</td>
-                  <td className="px-4 py-3">{booking.venue}</td>
-                  <td className="px-4 py-3">{booking.customer}</td>
-                  <td className="px-4 py-3">{booking.datetime}</td>
-                  <td className="px-4 py-3">₹{booking.amount}</td>
+              {slots.map((slot) => (
+                <tr key={slot.id} className="bg-[#fffaf4]">
+                  <td className="px-4 py-3 font-medium">{slot.id}</td>
+                  <td className="px-4 py-3">{slot.venueName}</td>
+                  <td className="px-4 py-3">{slot.sport}</td>
+                  <td className="px-4 py-3">{slot.date}</td>
+                  <td className="px-4 py-3">
+                    {slot.startTime} - {slot.endTime}
+                  </td>
+                  <td className="px-4 py-3">{slot.duration} mins</td>
+                  <td className="px-4 py-3">₹{slot.price}</td>
                   <td
                     className={`px-4 py-3 font-semibold ${
-                      booking.status === 'Booked'
+                      slot.status === 'Booked'
                         ? 'text-green-600'
-                        : booking.status === 'Pending'
-                        ? 'text-yellow-600'
-                        : 'text-red-600'
+                        : 'text-yellow-600'
                     }`}
                   >
-                    {booking.status}
+                    {slot.status}
                   </td>
                 </tr>
               ))}
