@@ -1,21 +1,30 @@
+// routes/venueRoutes.ts
 import express from 'express';
-import { createVenue, getAllVenues, getVenueById, updateVenue, deleteVenue } from '../controllers/venueController';
+import {
+  createVenue,
+  getVenuesByOwner,
+  getVenueById,
+  updateVenue,
+  deleteVenue,
+} from '../controllers/venueController';
+
 
 const router = express.Router();
 
-// POST /api/venues - Create a new venue
+
+// Create a new venue
 router.post('/', createVenue);
 
-// GET /api/venues - Get all venues
-router.get('/', getAllVenues);
+// Get all venues owned by the current user
+router.get('/', getVenuesByOwner);
 
-// GET /api/venues/:id - Get a specific venue by ID
+// Get single venue (must be owned by current user)
 router.get('/:id', getVenueById);
 
-// PUT /api/venues/:id - Update a venue
+// Update venue (must be owned by current user)
 router.put('/:id', updateVenue);
 
-// DELETE /api/venues/:id - Delete a venue
+// Delete venue (must be owned by current user)
 router.delete('/:id', deleteVenue);
 
 export default router;
