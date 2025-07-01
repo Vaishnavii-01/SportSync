@@ -406,7 +406,30 @@ const ManageVenues = () => {
 
               {/* Modal Body */}
               <div className="overflow-y-auto max-h-[calc(90vh-180px)] px-8 py-8">
-                <form className="space-y-10">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = {
+                      name: e.currentTarget.venueName.value,
+                      description: e.currentTarget.description.value,
+                      sports: e.currentTarget.sports.value.split(',').map((s: string) => s.trim()),
+                      address: {
+                        street: e.currentTarget.street.value,
+                        city: e.currentTarget.city.value,
+                        state: e.currentTarget.state.value,
+                        country: e.currentTarget.country.value,
+                        zipCode: e.currentTarget.zipCode.value,
+                        // coordinates: editingVenue?.address?.coordinates || undefined
+                      },
+                      contactNumber: e.currentTarget.contactNumber.value,
+                      openingTime: e.currentTarget.openingTime.value,
+                      closingTime: e.currentTarget.closingTime.value,
+                      isActive: e.currentTarget.status.value === 'true',
+                      owner: editingVenue?.owner || 'current-user-id' // Replace with actual user ID from auth
+                    };
+                    handleSubmitVenue(e, formData);
+                  }}
+                className="space-y-10">
                   {/* Basic Information */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 pb-3 border-b border-gray-200">
