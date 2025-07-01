@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import VOFooter from "../Components/Footer/VOFooter";
 import {
   FaPlus,
@@ -12,6 +12,18 @@ import {
   FaCalendarAlt,
   FaChartBar,
 } from "react-icons/fa";
+
+
+//imports for Connecting Frontend to Backend
+import { 
+  getVenues, 
+  getVenueById, 
+  createVenue, 
+  updateVenue, 
+  deleteVenue 
+} from "../../services/venueService";
+
+
 
 interface Address {
   street: string;
@@ -39,96 +51,63 @@ interface Venue {
 }
 
 const ManageVenues = () => {
-  const [venues, setVenues] = useState<Venue[]>([
-    {
-      _id: "V001",
-      name: "VESIT Turf",
-      description:
-        "Professional football turf with modern facilities and excellent playing conditions",
-      owner: "owner123",
-      address: {
-        street: "123 Main Street",
-        city: "Mumbai",
-        state: "Maharashtra",
-        country: "India",
-        zipCode: "400071",
-        coordinates: { lat: 19.076, lng: 72.8777 },
-      },
-      sports: ["Football", "Soccer"],
-      contactNumber: "+91 9876543210",
-      openingTime: "06:00",
-      closingTime: "22:00",
-      isActive: true,
-    },
-    {
-      _id: "V002",
-      name: "Elite Pool",
-      description:
-        "Olympic-sized swimming pool with professional coaching facilities",
-      owner: "owner456",
-      address: {
-        street: "456 Pool Avenue",
-        city: "Mumbai",
-        state: "Maharashtra",
-        country: "India",
-        zipCode: "400076",
-        coordinates: { lat: 19.1176, lng: 72.906 },
-      },
-      sports: ["Swimming", "Water Polo"],
-      contactNumber: "+91 9876543211",
-      openingTime: "05:00",
-      closingTime: "21:00",
-      isActive: true,
-    },
-    {
-      _id: "V003",
-      name: "City Basketball Court",
-      description:
-        "Indoor basketball court with professional flooring and equipment",
-      owner: "owner789",
-      address: {
-        street: "789 Court Road",
-        city: "Mumbai",
-        state: "Maharashtra",
-        country: "India",
-        zipCode: "400053",
-      },
-      sports: ["Basketball"],
-      contactNumber: "+91 9876543212",
-      openingTime: "08:00",
-      closingTime: "20:00",
-      isActive: false,
-    },
-    {
-      _id: "V004",
-      name: "Champions Cricket Ground",
-      description: "Full-size cricket ground with pavilion and practice nets",
-      owner: "owner101",
-      address: {
-        street: "101 Cricket Lane",
-        city: "Thane",
-        state: "Maharashtra",
-        country: "India",
-        zipCode: "400601",
-        coordinates: { lat: 19.2183, lng: 72.9781 },
-      },
-      sports: ["Cricket"],
-      contactNumber: "+91 9876543213",
-      openingTime: "06:00",
-      closingTime: "18:00",
-      isActive: true,
-    },
-  ]);
-
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const handleDeleteVenue = (id: string) => {
+  // Fetch venues on component mount
+  useEffect(() => {
+    const fetchVenues = async () => {
+      try {
+        const data = await getVenues();
+        setVenues(data);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch venues');
+        setLoading(false);
+        console.error(err);
+      }
+    };
+    
+    fetchVenues();
+  }, []);
+
+  const handleDeleteVenue = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this venue?")) {
-      setVenues(venues.filter((venue) => venue._id !== id));
+      try {
+        await deleteVenue(id);
+        setVenues(venues.filter((venue) => venue._id !== id));
+      } catch (err) {
+        setError('Failed to delete venue');
+        console.error(err);
+      }
     }
   };
+
+  const handleSubmitVenue = async (e: React.FormEvent, formData: any) => {
+    e.preventDefault();
+    
+    try {
+      if (editingVenue) {
+        // Update existing venue
+        const updatedVenue = await updateVenue(editingVenue._id, formData);
+        setVenues(venues.map(v => v._id === editingVenue._id ? updatedVenue : v));
+      } else {
+        // Create new venue
+        const newVenue = await createVenue(formData);
+        setVenues([...venues, newVenue]);
+      }
+      setShowAddModal(false);
+    } catch (err) {
+      setError(editingVenue ? 'Failed to update venue' : 'Failed to create venue');
+      console.error(err);
+    }
+  };
+
+  
 
   const handleEditVenue = (venue: Venue) => {
     setEditingVenue(venue);
