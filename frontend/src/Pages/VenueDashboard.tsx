@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaDownload } from 'react-icons/fa';
+import VOFooter from '../Components/Footer/VOFooter';
 
 interface Slot {
   id: string;
@@ -58,6 +59,7 @@ const VenueDashboard: React.FC = () => {
   ]);
 
   return (
+    <>
     <div className="bg-[#FFFFF8] min-h-screen">
       <section className="py-8 px-6 sm:px-20 grid grid-cols-2 sm:grid-cols-4 gap-6">
         <div className="bg-white shadow-md rounded-lg text-center py-6">
@@ -128,6 +130,8 @@ const VenueDashboard: React.FC = () => {
         </div>
       </div>
     </div>
+  <VOFooter />
+  </>
   );
 };
 

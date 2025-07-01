@@ -1,65 +1,63 @@
+// src/models/venue.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
-import validator from 'validator';
-import bcrypt from 'bcrypt';
 
-export interface IUser extends Document {
+export interface IVenue extends Document {
   name: string;
-  email: string;
-  password: string;
-  phone: string;
-  role: 'user' | 'vendor';
-  createdAt: Date;
-  updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
+  description: string;
+  owner: mongoose.Types.ObjectId;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+    coordinates?: {
+      lat: number;
+      lng: number;
+    };
+  };
+  sports: string[]; // Only sports offered (details in Section)
+  contactNumber: string;
+  openingTime: string;
+  closingTime: string;
+  isActive: boolean;
 }
 
-const userSchema: Schema<IUser> = new Schema(
+const venueSchema = new Schema<IVenue>(
   {
-    name: {
-      type: String,
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    address: {
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      country: { type: String, required: true },
+      zipCode: { type: String, required: true },
+      coordinates: {
+        lat: Number,
+        lng: Number
+      }
+    },
+    sports: { 
+      type: [String], 
       required: true,
-      trim: true,
-      maxlength: 50,
+      validate: {
+        validator: (sports: string[]) => sports.length > 0,
+        message: 'At least one sport must be specified'
+      }
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      validate: [validator.isEmail, 'Invalid email format'],
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 8,
-      select: false,
-    },
-    phone: {
-      type: String,
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ['user', 'vendor'],
-      default: 'user',
-    },
+    contactNumber: { type: String, required: true },
+    openingTime: { type: String, default: '08:00' },
+    closingTime: { type: String, default: '22:00' },
+    isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
-userSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  try {
-    this.password = await bcrypt.hash(this.password, 12);
-    next();
-  } catch (err) {
-    next(err as Error);
-  }
-});
+// Index for faster sports-based queries
+venueSchema.index({ sports: 1 });
 
-userSchema.methods.comparePassword = async function (candidatePassword: string) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-const User: Model<IUser> = mongoose.model<IUser>('User', userSchema);
-export default User;
+// Export both model and interface
+const Venue: Model<IVenue> = mongoose.model<IVenue>('Venue', venueSchema);
+export default Venue;
