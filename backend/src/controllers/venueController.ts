@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Venue from '../models/Venue';
+import Venue from '../models/venue';
 
 // Create a new venue
 export const createVenue = async (req: Request, res: Response) => {
