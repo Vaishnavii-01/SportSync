@@ -1,28 +1,28 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// src/models/booking.ts
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IBooking extends Document {
-  userId: mongoose.Types.ObjectId;
-  slotId: mongoose.Types.ObjectId;
-  venueId: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  venue: mongoose.Types.ObjectId;
   section: mongoose.Types.ObjectId;
-  status: 'booked' | 'cancelled' | 'completed';
-  paymentStatus: 'paid' | 'pending' | 'failed';
-  transactionId?: string;
-  bookedAt: Date;
+  slot: mongoose.Types.ObjectId;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  paymentStatus: 'pending' | 'completed' | 'failed';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const bookingSchema = new Schema<IBooking>({
-  userId: {
+  user: {
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  slotId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Slot',
-    required: true,
-  },
-  venueId: {
+  venue: {
     type: Schema.Types.ObjectId,
     ref: 'Venue',
     required: true,
@@ -32,23 +32,42 @@ const bookingSchema = new Schema<IBooking>({
     ref: 'Section',
     required: true,
   },
+  slot: {
+    type: Schema.Types.ObjectId,
+    ref: 'Slot',
+    required: true,
+  },
+  date: {
+    type: Date,
+    required: true,
+  },
+  startTime: {
+    type: Date,
+    required: true,
+  },
+  endTime: {
+    type: Date,
+    required: true,
+  },
+  totalPrice: {
+    type: Number,
+    required: true,
+  },
   status: {
     type: String,
-    enum: ['booked', 'cancelled', 'completed'],
-    default: 'booked',
+    enum: ['pending', 'confirmed', 'cancelled'],
+    default: 'pending',
   },
   paymentStatus: {
     type: String,
-    enum: ['paid', 'pending', 'failed'],
+    enum: ['pending', 'completed', 'failed'],
     default: 'pending',
-  },
-  transactionId: {
-    type: String,
-  },
-  bookedAt: {
-    type: Date,
-    default: Date.now,
   },
 }, { timestamps: true });
 
-export default mongoose.model<IBooking>('Booking', bookingSchema);
+// Index for faster querying
+bookingSchema.index({ venue: 1, date: 1, startTime: 1 });
+bookingSchema.index({ user: 1 });
+
+const Booking: Model<IBooking> = mongoose.model<IBooking>('Booking', bookingSchema);
+export default Booking;
