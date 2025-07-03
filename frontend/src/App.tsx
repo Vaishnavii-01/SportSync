@@ -6,22 +6,30 @@ import VenueDashboard from "./Pages/VenueDashboard";
 import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
 import ManageVenues from "./Pages/ManageVenues";
+import CustomerGrid from "./Pages/CustomerGrid";
+import CustomerVenue from "./Pages/CustomerVenue";
+import CustomerSettings from "./Pages/CustomerSettings";
 import "../index.css";
 
 const App = () => {
   const location = useLocation();
 
   const isVenueDashboard = location.pathname.startsWith("/venue");
-
+  const isCustomer = location.pathname.startsWith("/customer");
   return (
     <>
-      {isVenueDashboard ? <VenueNavbar /> : <GeneralNavbar />}
+      {isVenueDashboard ? <VenueNavbar /> : null}
+      {isCustomer ? null : <GeneralNavbar />}
+
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signin" element={<SignUp />} />
         <Route path="/venue/dashboard" element={<VenueDashboard />} />
         <Route path="/venue/manage" element={<ManageVenues />} />
+        <Route path="/customer/search" element={<CustomerGrid />} />
+        <Route path="/customer/venue/:id" element={<CustomerVenue />} />
+        <Route path="/customer/settings/:id" element={<CustomerSettings />} />
       </Routes>
     </>
   );
