@@ -17,7 +17,7 @@ import {
 // Imports for Connecting Frontend to Backend
 import { 
   getVenues, 
-  getVenueById, 
+  //getVenueById, 
   createVenue, 
   updateVenue, 
   deleteVenue 
