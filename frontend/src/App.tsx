@@ -1,6 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
-import GeneralNavbar from "./Components/Navbar/GeneralNavbar";
-import VenueNavbar from "./Components/Navbar/VenueNavbar";
+import { Routes, Route } from "react-router-dom";
 import HomePage from "./Pages/HomePage";
 import VenueDashboard from "./Pages/VenueDashboard";
 import Login from "./Pages/Login";
@@ -12,15 +10,8 @@ import CustomerSettings from "./Pages/CustomerSettings";
 import "../index.css";
 
 const App = () => {
-  const location = useLocation();
-
-  const isVenueDashboard = location.pathname.startsWith("/venue");
-  const isCustomer = location.pathname.startsWith("/customer");
   return (
     <>
-      {isVenueDashboard ? <VenueNavbar /> : null}
-      {isCustomer ? null : <GeneralNavbar />}
-
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />

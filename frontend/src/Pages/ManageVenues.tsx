@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import VOFooter from "../Components/Footer/VOFooter";
+import VenueNavbar from "../Components/Navbar/VenueNavbar";
 import {
   FaPlus,
   FaEdit,
@@ -15,12 +16,12 @@ import {
 } from "react-icons/fa";
 
 // Imports for Connecting Frontend to Backend
-import { 
-  getVenues, 
-  //getVenueById, 
-  createVenue, 
-  updateVenue, 
-  deleteVenue 
+import {
+  getVenues,
+  //getVenueById,
+  createVenue,
+  updateVenue,
+  deleteVenue,
 } from "../../services/venueService";
 
 interface Address {
@@ -65,12 +66,12 @@ const ManageVenues = () => {
         setVenues(data);
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch venues');
+        setError("Failed to fetch venues");
         setLoading(false);
         console.error(err);
       }
     };
-    
+
     fetchVenues();
   }, []);
 
@@ -80,7 +81,7 @@ const ManageVenues = () => {
         await deleteVenue(id);
         setVenues(venues.filter((venue) => venue._id !== id));
       } catch (err) {
-        setError('Failed to delete venue');
+        setError("Failed to delete venue");
         console.error(err);
       }
     }
@@ -90,31 +91,35 @@ const ManageVenues = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    
+
     const formData = new FormData(e.currentTarget);
-    
+
     const venueData = {
-      name: formData.get('venueName') as string,
-      description: formData.get('description') as string,
-      sports: (formData.get('sports') as string).split(',').map((s: string) => s.trim()),
+      name: formData.get("venueName") as string,
+      description: formData.get("description") as string,
+      sports: (formData.get("sports") as string)
+        .split(",")
+        .map((s: string) => s.trim()),
       address: {
-        street: formData.get('street') as string,
-        city: formData.get('city') as string,
-        state: formData.get('state') as string,
-        country: formData.get('country') as string,
-        zipCode: formData.get('zipCode') as string,
+        street: formData.get("street") as string,
+        city: formData.get("city") as string,
+        state: formData.get("state") as string,
+        country: formData.get("country") as string,
+        zipCode: formData.get("zipCode") as string,
       },
-      contactNumber: formData.get('contactNumber') as string,
-      openingTime: formData.get('openingTime') as string,
-      closingTime: formData.get('closingTime') as string,
-      isActive: formData.get('status') === 'true',
-      owner: editingVenue?.owner || '6863d1cfa8d1e82535f71e3e'
+      contactNumber: formData.get("contactNumber") as string,
+      openingTime: formData.get("openingTime") as string,
+      closingTime: formData.get("closingTime") as string,
+      isActive: formData.get("status") === "true",
+      owner: editingVenue?.owner || "6863d1cfa8d1e82535f71e3e",
     };
-    
+
     try {
       if (editingVenue) {
         const updatedVenue = await updateVenue(editingVenue._id, venueData);
-        setVenues(venues.map(v => v._id === editingVenue._id ? updatedVenue : v));
+        setVenues(
+          venues.map((v) => (v._id === editingVenue._id ? updatedVenue : v))
+        );
       } else {
         const newVenue = await createVenue(venueData);
         setVenues([...venues, newVenue]);
@@ -122,7 +127,9 @@ const ManageVenues = () => {
       setShowAddModal(false);
       setEditingVenue(null);
     } catch (err) {
-      setError(editingVenue ? 'Failed to update venue' : 'Failed to create venue');
+      setError(
+        editingVenue ? "Failed to update venue" : "Failed to create venue"
+      );
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -154,17 +161,23 @@ const ManageVenues = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading venues...</p>
+      <>
+        <VenueNavbar />
+
+        <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading venues...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
+      <VenueNavbar />
+
       <div className="min-h-screen bg-[#FFFFF8]">
         {/* Enhanced Header */}
         <div className="bg-gradient-to-r from-black to-gray-900 px-6 sm:px-12 lg:px-20 pt-12 pb-16">
@@ -283,8 +296,12 @@ const ManageVenues = () => {
             {venues.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🏟️</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No venues found</h3>
-                <p className="text-gray-500 mb-6">Get started by adding your first venue</p>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  No venues found
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Get started by adding your first venue
+                </p>
                 <button
                   onClick={handleAddVenue}
                   className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
@@ -453,7 +470,10 @@ const ManageVenues = () => {
 
               {/* Modal Body */}
               <div className="overflow-y-auto max-h-[calc(90vh-240px)]">
-                <form onSubmit={handleSubmitVenue} className="px-8 py-8 space-y-10">
+                <form
+                  onSubmit={handleSubmitVenue}
+                  className="px-8 py-8 space-y-10"
+                >
                   {/* Basic Information */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 pb-3 border-b border-gray-200">
@@ -690,86 +710,101 @@ const ManageVenues = () => {
                   </div>
 
                   {/* Modal Footer - Inside Form */}
-                    <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
-                      {/* Error message display */}
-                      {error && (
-                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
-                          <svg 
-                            className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                          >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                            />
-                          </svg>
-                          <span>{error}</span>
-                        </div>
-                      )}
-
-                      <div className="flex gap-4 justify-end">
-                        {/* Cancel Button */}
-                        <button
-                          type="button"
-                          onClick={closeModal}
-                          disabled={isSubmitting}
-                          className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
-                            isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-100 hover:border-gray-400'
-                          }`}
+                  <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
+                    {/* Error message display */}
+                    {error && (
+                      <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
+                        <svg
+                          className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          Cancel
-                        </button>
-
-                        {/* Submit Button */}
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
-                            isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:bg-gray-800'
-                          }`}
-                        >
-                          {isSubmitting ? (
-                            <span className="flex items-center justify-center">
-                              <svg 
-                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                fill="none" 
-                                viewBox="0 0 24 24"
-                              >
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {editingVenue ? "Updating..." : "Creating..."}
-                            </span>
-                          ) : (
-                            <span className="flex items-center">
-                              {editingVenue ? (
-                                <>
-                                  <FaSave className="mr-2" />
-                                  Update Venue
-                                </>
-                              ) : (
-                                <>
-                                  <FaPlus className="mr-2" />
-                                  Create Venue
-                                </>
-                              )}
-                            </span>
-                          )}
-                        </button>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span>{error}</span>
                       </div>
+                    )}
+
+                    <div className="flex gap-4 justify-end">
+                      {/* Cancel Button */}
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        disabled={isSubmitting}
+                        className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
+                          isSubmitting
+                            ? "opacity-70 cursor-not-allowed"
+                            : "hover:bg-gray-100 hover:border-gray-400"
+                        }`}
+                      >
+                        Cancel
+                      </button>
+
+                      {/* Submit Button */}
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
+                          isSubmitting
+                            ? "opacity-70 cursor-not-allowed"
+                            : "hover:-translate-y-0.5 hover:bg-gray-800"
+                        }`}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center justify-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            {editingVenue ? "Updating..." : "Creating..."}
+                          </span>
+                        ) : (
+                          <span className="flex items-center">
+                            {editingVenue ? (
+                              <>
+                                <FaSave className="mr-2" />
+                                Update Venue
+                              </>
+                            ) : (
+                              <>
+                                <FaPlus className="mr-2" />
+                                Create Venue
+                              </>
+                            )}
+                          </span>
+                        )}
+                      </button>
                     </div>
-                  </form>
-                </div>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}
       </div>
-          
+
       <VOFooter />
     </>
   );
