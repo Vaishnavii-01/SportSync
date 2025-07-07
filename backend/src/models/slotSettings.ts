@@ -11,7 +11,7 @@ export interface ISlotSettings extends Document {
   section: mongoose.Types.ObjectId;
   startDate?: Date;
   endDate?: Date;
-  days?: string[]; // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  days: string[]; // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
   timings: ITimingSlot[];
   duration: number; // in minutes
   bookingAllowed: number; // how many days in advance booking is allowed
@@ -52,10 +52,11 @@ const slotSettingsSchema = new Schema<ISlotSettings>({
     type: Date,
     default: null,
   },
-  days: [{
-    type: String,
+  days: {
+    type: [String],
     enum: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-  }],
+    default: [], // Add default empty array
+  },
   timings: {
     type: [timingSlotSchema],
     required: true,
