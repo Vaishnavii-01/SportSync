@@ -6,7 +6,7 @@ import authRoutes from './routes/authRoutes';
 import venueRoutes from './routes/venueRoutes';
 
 import sectionRoutes from './routes/sectionRoutes'
-import slotRoutes from './routes/slotRoutes';
+import slotRoutes from './routes/slotSettingsRoutes';
 
 
 
