@@ -6,8 +6,8 @@ import authRoutes from './routes/authRoutes';
 import venueRoutes from './routes/venueRoutes';
 
 import sectionRoutes from './routes/sectionRoutes'
-import slotRoutes from './routes/slotSettingsRoutes';
-
+import slotSettingsRoutes from './routes/slotSettingsRoutes';
+import bookingRoutes from './routes/bookingRoutes'; // NEW: Add booking routes
 
 
 dotenv.config();
@@ -26,7 +26,8 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/venues', venueRoutes); 
 app.use('/api/sections', sectionRoutes);
-app.use('/api/slots', slotRoutes);
+app.use('/api/slot-settings', slotSettingsRoutes); // Changed from '/api/slots' for consistency
+app.use('/api/bookings', bookingRoutes); // NEW: Booking routes
 
 
 const PORT = process.env.PORT || 5000;
