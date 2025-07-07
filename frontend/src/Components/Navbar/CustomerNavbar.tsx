@@ -12,12 +12,12 @@ const CustomerNavbar: React.FC = () => {
       <ul className="flex-1 flex justify-center gap-10 font-medium">
         <li>
           <Link to="/customer/search" className="hover:text-gray-300">
-            Find Venues
+            Explore Venues
           </Link>
         </li>
         <li>
-          <Link to="/customer/settings/:id" className="hover:text-gray-300">
-            Profile Settings
+          <Link to="/customer/dashboard" className="hover:text-gray-300">
+            Dashboard
           </Link>
         </li>
       </ul>
@@ -33,7 +33,7 @@ const CustomerNavbar: React.FC = () => {
           {dropdownOpen && (
             <div className="absolute right-0 top-12 bg-white text-black rounded-md shadow-md z-50 w-40">
               <Link
-                to="/venue/profile"
+                to="/customer/settings/:id"
                 className="block px-4 py-2 hover:bg-gray-100"
                 onClick={() => setDropdownOpen(false)}
               >

@@ -7,6 +7,8 @@ import ManageVenues from "./Pages/ManageVenues";
 import CustomerGrid from "./Pages/CustomerGrid";
 import CustomerVenue from "./Pages/CustomerVenue";
 import CustomerSettings from "./Pages/CustomerSettings";
+import CustomerDashboard from "./Pages/CustomerDashboard";
+import ContactPage from "./Pages/ContactPage";
 import "../index.css";
 
 const App = () => {
@@ -21,6 +23,8 @@ const App = () => {
         <Route path="/customer/search" element={<CustomerGrid />} />
         <Route path="/customer/venue/:id" element={<CustomerVenue />} />
         <Route path="/customer/settings/:id" element={<CustomerSettings />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </>
   );
