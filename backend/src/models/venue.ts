@@ -1,4 +1,3 @@
-// src/models/venue.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IVenue extends Document {
@@ -16,11 +15,12 @@ export interface IVenue extends Document {
       lng: number;
     };
   };
-  sports: string[]; // Only sports offered (details in Section)
+  sports: string[];
   contactNumber: string;
   openingTime: string;
   closingTime: string;
   isActive: boolean;
+  rating: number;
 }
 
 const venueSchema = new Schema<IVenue>(
@@ -50,7 +50,8 @@ const venueSchema = new Schema<IVenue>(
     contactNumber: { type: String, required: true },
     openingTime: { type: String, default: '08:00' },
     closingTime: { type: String, default: '22:00' },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    rating: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
@@ -58,6 +59,5 @@ const venueSchema = new Schema<IVenue>(
 // Index for faster sports-based queries
 venueSchema.index({ sports: 1 });
 
-// Export both model and interface
 const Venue: Model<IVenue> = mongoose.model<IVenue>('Venue', venueSchema);
 export default Venue;

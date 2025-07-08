@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/venues'; // Adjust based on your backend URL
+const API_BASE_URL = 'http://localhost:5000/api/venues';
 
 export const getVenues = async () => {
   try {

@@ -23,7 +23,8 @@ export const createVenue = async (req: Request, res: Response) => {
       contactNumber,
       openingTime,
       closingTime,
-      owner, // For now, allow this to be passed manually
+      owner,
+      rating: 0,
     });
 
     await newVenue.save();
@@ -38,10 +39,10 @@ export const createVenue = async (req: Request, res: Response) => {
   }
 };
 
-// @desc Get all venues
-export const getVenuesByOwner = async (req: Request, res: Response) => {
+// @desc Get all active venues
+export const getAllVenues = async (req: Request, res: Response) => {
   try {
-    const venues = await Venue.find();
+    const venues = await Venue.find({ isActive: true });
     res.status(200).json(venues);
   } catch (error: any) {
     console.error('Get Venues Error:', error.message);
