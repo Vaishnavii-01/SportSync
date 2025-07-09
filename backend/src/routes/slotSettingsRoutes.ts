@@ -1,7 +1,8 @@
 // src/routes/slotSettings.ts
 import express from 'express';
 import {
-  createOrUpdateSlotSettings,
+  createSlotSettings,
+  updateSlotSettings,
   getSlotSettings,
   getVenueSlotSettings,
   deleteSlotSettings,
@@ -10,8 +11,11 @@ import {
 
 const router = express.Router();
 
-// Create or update slot settings
-router.post('/', createOrUpdateSlotSettings);
+// Create new slot settings
+router.post('/', createSlotSettings);
+
+// Update existing slot settings by ID
+router.put('/:slotSettingsId', updateSlotSettings);
 
 // Get slot settings for a specific section
 router.get('/section/:sectionId', getSlotSettings);
@@ -19,10 +23,10 @@ router.get('/section/:sectionId', getSlotSettings);
 // Get all slot settings for a venue
 router.get('/venue/:venueId', getVenueSlotSettings);
 
-// Delete (deactivate) slot settings
-router.delete('/section/:sectionId', deleteSlotSettings);
+// Deactivate (soft delete) slot settings by ID
+router.delete('/:slotSettingsId', deleteSlotSettings);
 
-// Generate available slots for a specific date
+// Generate available slots for a specific date and section
 router.get('/available-slots', generateAvailableSlots);
 
 export default router;
