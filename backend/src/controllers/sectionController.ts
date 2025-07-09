@@ -1,7 +1,7 @@
-// src/controllers/sectionController.ts
 import { Request, Response } from 'express';
 import Section from '../models/section';
 import Venue from '../models/venue';
+import SlotSettings from '../models/slotSettings';
 
 // @desc Create a new section
 export const createSection = async (req: Request, res: Response) => {
@@ -10,8 +10,6 @@ export const createSection = async (req: Request, res: Response) => {
       name,
       venue,
       sport,
-      priceModel,
-      basePrice,
       capacity,
       description,
       images,
@@ -29,8 +27,6 @@ export const createSection = async (req: Request, res: Response) => {
       name,
       venue,
       sport,
-      priceModel,
-      basePrice,
       capacity,
       description,
       images,
@@ -62,7 +58,9 @@ export const getVenueSections = async (req: Request, res: Response) => {
       query.sport = sport;
     }
 
-    const sections = await Section.find(query).populate('venue', 'name');
+    const sections = await Section.find(query)
+      .populate('venue', 'name')
+      .populate('slotSettings');
 
     res.status(200).json({
       venueId: venueId,
@@ -81,7 +79,9 @@ export const getSectionById = async (req: Request, res: Response) => {
   try {
     const { sectionId } = req.params;
 
-    const section = await Section.findById(sectionId).populate('venue', 'name openingTime closingTime');
+    const section = await Section.findById(sectionId)
+      .populate('venue', 'name openingTime closingTime')
+      .populate('slotSettings');
 
     if (!section) {
       return res.status(404).json({ error: 'Section not found' });
@@ -128,6 +128,12 @@ export const deleteSection = async (req: Request, res: Response) => {
   try {
     const { sectionId } = req.params;
 
+    // Deactivate associated slot settings
+    await SlotSettings.updateMany(
+      { section: sectionId },
+      { isActive: false }
+    );
+
     const deletedSection = await Section.findByIdAndDelete(sectionId);
 
     if (!deletedSection) {
@@ -135,7 +141,7 @@ export const deleteSection = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      message: 'Section deleted successfully'
+      message: 'Section and associated slot settings deleted successfully'
     });
 
   } catch (error: any) {

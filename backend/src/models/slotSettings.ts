@@ -1,4 +1,3 @@
-// src/models/slotSettings.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface ITimingSlot {
@@ -15,6 +14,8 @@ export interface ISlotSettings extends Document {
   timings: ITimingSlot[];
   duration: number; // in minutes
   bookingAllowed: number; // how many days in advance booking is allowed
+  priceModel: 'perHour' | 'perSlot' | 'perSession';
+  basePrice: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -55,7 +56,7 @@ const slotSettingsSchema = new Schema<ISlotSettings>({
   days: {
     type: [String],
     enum: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-    default: [], // Add default empty array
+    default: [],
   },
   timings: {
     type: [timingSlotSchema],
@@ -76,6 +77,16 @@ const slotSettingsSchema = new Schema<ISlotSettings>({
     required: true,
     min: [1, 'Booking must be allowed at least 1 day in advance'],
     max: [365, 'Booking cannot be allowed more than 365 days in advance']
+  },
+  priceModel: {
+    type: String,
+    enum: ['perHour', 'perSlot', 'perSession'],
+    required: [true, 'A slot setting must have a price model'],
+  },
+  basePrice: {
+    type: Number,
+    required: [true, 'A slot setting must have a base price'],
+    min: [0, 'Price cannot be negative'],
   },
   isActive: {
     type: Boolean,

@@ -1,11 +1,10 @@
-// src/controllers/slotSettingsController.ts
 import { Request, Response } from 'express';
 import SlotSettings from '../models/slotSettings';
 import Section from '../models/section';
 import Venue from '../models/venue';
 
-// @desc Create or update slot settings for a section
-export const createOrUpdateSlotSettings = async (req: Request, res: Response) => {
+// @desc Create new slot settings for a section
+export const createSlotSettings = async (req: Request, res: Response) => {
   try {
     const {
       venueId,
@@ -15,7 +14,9 @@ export const createOrUpdateSlotSettings = async (req: Request, res: Response) =>
       days,
       timings,
       duration,
-      bookingAllowed
+      bookingAllowed,
+      priceModel,
+      basePrice
     } = req.body;
 
     // Validate venue exists
@@ -34,53 +35,77 @@ export const createOrUpdateSlotSettings = async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'Section does not belong to this venue' });
     }
 
-    // Check if slot settings already exist for this section
-    let slotSettings = await SlotSettings.findOne({ 
-      venue: venueId, 
-      section: sectionId 
+    // Create new settings
+    const slotSettings = new SlotSettings({
+      venue: venueId,
+      section: sectionId,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      days: days || [],
+      timings,
+      duration,
+      bookingAllowed,
+      priceModel,
+      basePrice,
+      isActive: true
     });
 
-    if (slotSettings) {
-      // Update existing settings
-      slotSettings.startDate = startDate || null;
-      slotSettings.endDate = endDate || null;
-      slotSettings.days = days || [];
-      slotSettings.timings = timings;
-      slotSettings.duration = duration;
-      slotSettings.bookingAllowed = bookingAllowed;
-      slotSettings.isActive = true;
-      
-      await slotSettings.save();
-      
-      res.status(200).json({
-        message: 'Slot settings updated successfully',
-        slotSettings: slotSettings
-      });
-    } else {
-      // Create new settings
-      slotSettings = new SlotSettings({
-        venue: venueId,
-        section: sectionId,
+    await slotSettings.save();
+
+    res.status(201).json({
+      message: 'Slot settings created successfully',
+      slotSettings: slotSettings
+    });
+
+  } catch (error: any) {
+    console.error('Create Slot Settings Error:', error.message);
+    res.status(500).json({ error: 'Error creating slot settings', details: error.message });
+  }
+};
+
+// @desc Update slot settings
+export const updateSlotSettings = async (req: Request, res: Response) => {
+  try {
+    const { slotSettingsId } = req.params;
+    const {
+      startDate,
+      endDate,
+      days,
+      timings,
+      duration,
+      bookingAllowed,
+      priceModel,
+      basePrice
+    } = req.body;
+
+    const slotSettings = await SlotSettings.findByIdAndUpdate(
+      slotSettingsId,
+      {
         startDate: startDate || null,
         endDate: endDate || null,
         days: days || [],
         timings,
         duration,
         bookingAllowed,
+        priceModel,
+        basePrice,
         isActive: true
-      });
+      },
+      { new: true, runValidators: true }
+    );
 
-      await slotSettings.save();
-
-      res.status(201).json({
-        message: 'Slot settings created successfully',
-        slotSettings: slotSettings
-      });
+    if (!slotSettings) {
+      return res.status(404).json({ error: 'Slot settings not found' });
     }
 
+    res.status(200).json({
+      message: 'Slot settings updated successfully',
+      slotSettings: slotSettings
+    });
+
   } catch (error: any) {
-    console.error('Create/Update Slot Settings Error:', error.message);
-    res.status(500).json({ error: 'Error managing slot settings', details: error.message });
+    console.error('Update Slot Settings Error:', error.message);
+    res.status(500).json({ error: 'Error updating slot settings', details: error.message });
   }
 };
 
@@ -89,13 +114,13 @@ export const getSlotSettings = async (req: Request, res: Response) => {
   try {
     const { sectionId } = req.params;
 
-    const slotSettings = await SlotSettings.findOne({ 
+    const slotSettings = await SlotSettings.find({ 
       section: sectionId, 
       isActive: true 
     }).populate('venue', 'name openingTime closingTime')
-      .populate('section', 'name sport basePrice');
+      .populate('section', 'name sport');
 
-    if (!slotSettings) {
+    if (!slotSettings || slotSettings.length === 0) {
       return res.status(404).json({ error: 'No slot settings found for this section' });
     }
 
@@ -117,7 +142,7 @@ export const getVenueSlotSettings = async (req: Request, res: Response) => {
     const slotSettings = await SlotSettings.find({ 
       venue: venueId, 
       isActive: true 
-    }).populate('section', 'name sport basePrice');
+    }).populate('section', 'name sport');
 
     res.status(200).json({
       venueId: venueId,
@@ -133,10 +158,10 @@ export const getVenueSlotSettings = async (req: Request, res: Response) => {
 // @desc Delete slot settings
 export const deleteSlotSettings = async (req: Request, res: Response) => {
   try {
-    const { sectionId } = req.params;
+    const { slotSettingsId } = req.params;
 
-    const slotSettings = await SlotSettings.findOneAndUpdate(
-      { section: sectionId },
+    const slotSettings = await SlotSettings.findByIdAndUpdate(
+      slotSettingsId,
       { isActive: false },
       { new: true }
     );
@@ -164,31 +189,28 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Section ID and date are required' });
     }
 
-    // Get slot settings for the section
-    const slotSettings = await SlotSettings.findOne({
+    // Get all active slot settings for the section
+    const slotSettings = await SlotSettings.find({
       section: sectionId,
       isActive: true
-    }).populate('section', 'name sport basePrice');
+    }).populate('section', 'name sport');
 
-    if (!slotSettings) {
+    if (!slotSettings || slotSettings.length === 0) {
       return res.status(404).json({ error: 'No slot settings found for this section' });
     }
 
     const targetDate = new Date(date as string);
     const dayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][targetDate.getDay()];
 
-    // Check if the requested date is within the allowed range
-    if (slotSettings.startDate && targetDate < slotSettings.startDate) {
-      return res.status(400).json({ error: 'Date is before the start date' });
-    }
+    // Find applicable slot settings for the given day
+    const applicableSettings = slotSettings.find(settings => 
+      settings.days.includes(dayOfWeek) &&
+      (!settings.startDate || targetDate >= settings.startDate) &&
+      (!settings.endDate || targetDate <= settings.endDate)
+    );
 
-    if (slotSettings.endDate && targetDate > slotSettings.endDate) {
-      return res.status(400).json({ error: 'Date is after the end date' });
-    }
-
-    // Check if the day is allowed
-    if (slotSettings.days.length > 0 && !slotSettings.days.includes(dayOfWeek)) {
-      return res.status(400).json({ error: 'Slots are not available on this day' });
+    if (!applicableSettings) {
+      return res.status(400).json({ error: 'No slot settings available for this date' });
     }
 
     // Check if booking is allowed for this date
@@ -196,7 +218,7 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
     const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays > slotSettings.bookingAllowed) {
+    if (diffDays > applicableSettings.bookingAllowed) {
       return res.status(400).json({ error: 'Booking is not allowed this far in advance' });
     }
 
@@ -206,9 +228,9 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
 
     // Generate slots for each timing period
     const availableSlots = [];
-    const section = slotSettings.section as any;
+    const section = applicableSettings.section as any;
 
-    for (const timing of slotSettings.timings) {
+    for (const timing of applicableSettings.timings) {
       const [startHour, startMin] = timing.startTime.split(':').map(Number);
       const [endHour, endMin] = timing.endTime.split(':').map(Number);
 
@@ -221,7 +243,7 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
       // Generate slots within this timing period
       const current = new Date(startTime);
       while (current < endTime) {
-        const slotEndTime = new Date(current.getTime() + slotSettings.duration * 60000);
+        const slotEndTime = new Date(current.getTime() + applicableSettings.duration * 60000);
         
         if (slotEndTime > endTime) break;
 
@@ -235,13 +257,14 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
           endTime: slotEndTime.toTimeString().slice(0, 5), // HH:MM format
           fullStartTime: new Date(current),
           fullEndTime: new Date(slotEndTime),
-          duration: slotSettings.duration,
-          price: section.basePrice,
+          duration: applicableSettings.duration,
+          price: applicableSettings.basePrice,
+          priceModel: applicableSettings.priceModel,
           isAvailable: true // We'll check bookings separately
         };
 
         availableSlots.push(slot);
-        current.setTime(current.getTime() + slotSettings.duration * 60000);
+        current.setTime(current.getTime() + applicableSettings.duration * 60000);
       }
     }
 
@@ -252,9 +275,11 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
       totalSlots: availableSlots.length,
       slots: availableSlots,
       slotSettings: {
-        duration: slotSettings.duration,
-        bookingAllowed: slotSettings.bookingAllowed,
-        timings: slotSettings.timings
+        duration: applicableSettings.duration,
+        bookingAllowed: applicableSettings.bookingAllowed,
+        priceModel: applicableSettings.priceModel,
+        basePrice: applicableSettings.basePrice,
+        timings: applicableSettings.timings
       }
     });
 

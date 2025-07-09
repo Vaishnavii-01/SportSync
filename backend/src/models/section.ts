@@ -5,8 +5,6 @@ export interface ISection extends Document {
   name: string;
   venue: mongoose.Types.ObjectId;
   sport: string;
-  priceModel: 'perHour' | 'perSlot' | 'perSession';
-  basePrice: number;
   capacity: number;
   description: string;
   images: string[];
@@ -33,16 +31,6 @@ const sectionSchema: Schema<ISection> = new Schema(
     sport: {
       type: String,
       required: [true, 'Please specify the sport for this section'],
-    },
-    priceModel: {
-      type: String,
-      enum: ['perHour', 'perSlot', 'perSession'],
-      default: 'perHour',
-    },
-    basePrice: {
-      type: Number,
-      required: [true, 'A section must have a base price'],
-      min: [0, 'Price cannot be negative'],
     },
     capacity: {
       type: Number,
@@ -81,9 +69,9 @@ sectionSchema.pre<ISection>('save', async function (next) {
   next();
 });
 
-// Virtual populate to get all slots for this section
-sectionSchema.virtual('slots', {
-  ref: 'Slot',
+// Virtual populate to get all slot settings for this section
+sectionSchema.virtual('slotSettings', {
+  ref: 'SlotSettings',
   foreignField: 'section',
   localField: '_id',
 });
