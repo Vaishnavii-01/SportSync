@@ -45,15 +45,17 @@ const generateAvailableTimings = (
   const endTime = new Date();
   endTime.setHours(closeHour, closeMin, 0, 0);
 
-  const blockedTimes = [...ownerBlockedTime, ...maintenanceTime].map((range) => {
-    const [start, end] = range.split("-").map((t) => {
-      const [h, m] = t.split(":").map(Number);
-      const date = new Date();
-      date.setHours(h, m, 0, 0);
-      return date;
-    });
-    return { start, end };
-  });
+  const blockedTimes = [...ownerBlockedTime, ...maintenanceTime].map(
+    (range) => {
+      const [start, end] = range.split("-").map((t) => {
+        const [h, m] = t.split(":").map(Number);
+        const date = new Date();
+        date.setHours(h, m, 0, 0);
+        return date;
+      });
+      return { start, end };
+    }
+  );
 
   while (currentTime < endTime) {
     const slotEndTime = new Date(currentTime);
@@ -144,7 +146,8 @@ const VenueCard = ({
   onDelete: (id: string) => void;
   onManageSections: (id: string) => void;
 }) => {
-  const formatAddress = (address: Address) => `${address.city}, ${address.state}`;
+  const formatAddress = (address?: Address) =>
+    `${address?.city || "Unknown City"}, ${address?.state || "Unknown State"}`;
 
   return (
     <div className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
@@ -154,7 +157,7 @@ const VenueCard = ({
         </div>
         <h3 className="text-xl font-bold text-black mb-2">{venue.name}</h3>
         <div className="flex flex-wrap gap-1 justify-center">
-          {venue.sports.slice(0, 2).map((sport, idx) => (
+          {venue.sports?.slice(0, 2).map((sport, idx) => (
             <span
               key={idx}
               className="px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full"
@@ -162,7 +165,7 @@ const VenueCard = ({
               {sport}
             </span>
           ))}
-          {venue.sports.length > 2 && (
+          {venue.sports?.length > 2 && (
             <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
               +{venue.sports.length - 2}
             </span>
@@ -183,11 +186,15 @@ const VenueCard = ({
         <div className="space-y-3">
           <div className="flex items-center space-x-3 text-gray-600">
             <FaMapMarkerAlt className="text-gray-500 text-sm" />
-            <span className="text-sm font-medium">{formatAddress(venue.address)}</span>
+            <span className="text-sm font-medium">
+              {formatAddress(venue.address)}
+            </span>
           </div>
           <div className="flex items-center space-x-3 text-gray-600">
             <FaClock className="text-gray-500 text-sm" />
-            <span className="text-sm">{venue.openingTime} - {venue.closingTime}</span>
+            <span className="text-sm">
+              {venue.openingTime} - {venue.closingTime}
+            </span>
           </div>
           <div className="flex items-center space-x-3 text-gray-600">
             <FaPhone className="text-gray-500 text-sm" />
@@ -197,10 +204,14 @@ const VenueCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <div className="flex items-center space-x-2">
             <div
-              className={`w-2 h-2 rounded-full ${venue.isActive ? "bg-green-500" : "bg-red-500"}`}
+              className={`w-2 h-2 rounded-full ${
+                venue.isActive ? "bg-green-500" : "bg-red-500"
+              }`}
             />
             <span
-              className={`text-sm font-medium ${venue.isActive ? "text-green-700" : "text-red-700"}`}
+              className={`text-sm font-medium ${
+                venue.isActive ? "text-green-700" : "text-red-700"
+              }`}
             >
               {venue.isActive ? "Active" : "Inactive"}
             </span>
@@ -253,7 +264,9 @@ const VenueFormModal = ({
                 {editingVenue ? "Edit Venue" : "Add New Venue"}
               </h2>
               <p className="text-gray-600 text-sm">
-                {editingVenue ? "Update venue information and settings" : "Create a new venue for your platform"}
+                {editingVenue
+                  ? "Update venue information and settings"
+                  : "Create a new venue for your platform"}
               </p>
             </div>
           </div>
@@ -261,8 +274,18 @@ const VenueFormModal = ({
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -275,8 +298,12 @@ const VenueFormModal = ({
                 <FaChartBar className="text-black text-sm" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-black">Basic Information</h3>
-                <p className="text-sm text-gray-600">Essential details about your venue</p>
+                <h3 className="text-lg font-semibold text-black">
+                  Basic Information
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Essential details about your venue
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -305,7 +332,9 @@ const VenueFormModal = ({
                   placeholder="Football, Cricket, Basketball"
                   defaultValue={editingVenue?.sports.join(", ") || ""}
                 />
-                <p className="text-xs text-gray-500">Separate multiple sports with commas</p>
+                <p className="text-xs text-gray-500">
+                  Separate multiple sports with commas
+                </p>
               </div>
             </div>
             <div className="space-y-2">
@@ -328,8 +357,12 @@ const VenueFormModal = ({
                 <FaMapMarkerAlt className="text-black text-sm" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-black">Location Information</h3>
-                <p className="text-sm text-gray-600">Where your venue is located</p>
+                <h3 className="text-lg font-semibold text-black">
+                  Location Information
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Where your venue is located
+                </p>
               </div>
             </div>
             <div className="space-y-2">
@@ -408,8 +441,12 @@ const VenueFormModal = ({
                 <FaPhone className="text-black text-sm" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-black">Contact & Hours</h3>
-                <p className="text-sm text-gray-600">How customers can reach you</p>
+                <h3 className="text-lg font-semibold text-black">
+                  Contact & Hours
+                </h3>
+                <p className="text-sm text-gray-600">
+                  How customers can reach you
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
@@ -426,7 +463,9 @@ const VenueFormModal = ({
                   placeholder="+91 9876543210"
                   defaultValue={editingVenue?.contactNumber || ""}
                 />
-                <p className="text-xs text-gray-500">Enter a valid phone number (e.g., +919876543210)</p>
+                <p className="text-xs text-gray-500">
+                  Enter a valid phone number (e.g., +919876543210)
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -456,22 +495,36 @@ const VenueFormModal = ({
               </div>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Venue Status</label>
+              <label className="block text-sm font-semibold text-gray-700">
+                Venue Status
+              </label>
               <select
                 name="status"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                 defaultValue={editingVenue?.isActive ? "true" : "false"}
               >
                 <option value="true">🟢 Active - Available for bookings</option>
-                <option value="false">🔴 Inactive - Temporarily unavailable</option>
+                <option value="false">
+                  🔴 Inactive - Temporarily unavailable
+                </option>
               </select>
             </div>
           </div>
           <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
             {error && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
-                <svg className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <span>{error}</span>
               </div>
@@ -482,7 +535,9 @@ const VenueFormModal = ({
                 onClick={onClose}
                 disabled={isSubmitting}
                 className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
-                  isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-100 hover:border-gray-400"
+                  isSubmitting
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:bg-gray-100 hover:border-gray-400"
                 }`}
               >
                 Cancel
@@ -491,7 +546,9 @@ const VenueFormModal = ({
                 type="submit"
                 disabled={isSubmitting}
                 className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
-                  isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5 hover:bg-gray-800"
+                  isSubmitting
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:-translate-y-0.5 hover:bg-gray-800"
                 }`}
               >
                 {isSubmitting ? (
@@ -502,7 +559,14 @@ const VenueFormModal = ({
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
                       <path
                         className="opacity-75"
                         fill="currentColor"
@@ -562,15 +626,27 @@ const SectionFormModal = ({
             </div>
             <div>
               <h2 className="text-2xl font-bold text-black">Manage Sections</h2>
-              <p className="text-gray-600 text-sm">Add or view sections for this venue</p>
+              <p className="text-gray-600 text-sm">
+                Add or view sections for this venue
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -583,8 +659,12 @@ const SectionFormModal = ({
                 <FaTable className="text-black text-sm" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-black">Add New Section</h3>
-                <p className="text-sm text-gray-600">Create a new section for this venue</p>
+                <h3 className="text-lg font-semibold text-black">
+                  Add New Section
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Create a new section for this venue
+                </p>
               </div>
             </div>
             <form onSubmit={onSubmit} className="space-y-6">
@@ -657,7 +737,8 @@ const SectionFormModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Minimum Duration (minutes) <span className="text-red-500">*</span>
+                  Minimum Duration (minutes){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -669,7 +750,9 @@ const SectionFormModal = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Owner Blocked Time</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Owner Blocked Time
+                </label>
                 <input
                   type="text"
                   name="ownerBlockedTime"
@@ -677,10 +760,15 @@ const SectionFormModal = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="e.g., 09:00-10:00;13:00-14:00"
                 />
-                <p className="text-xs text-gray-500">Separate time ranges with semicolons (e.g., 09:00-10:00;13:00-14:00)</p>
+                <p className="text-xs text-gray-500">
+                  Separate time ranges with semicolons (e.g.,
+                  09:00-10:00;13:00-14:00)
+                </p>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Maintenance Time</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Maintenance Time
+                </label>
                 <input
                   type="text"
                   name="maintenanceTime"
@@ -688,10 +776,15 @@ const SectionFormModal = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="e.g., 14:00-15:00;18:00-19:00"
                 />
-                <p className="text-xs text-gray-500">Separate time ranges with semicolons (e.g., 14:00-15:00;18:00-19:00)</p>
+                <p className="text-xs text-gray-500">
+                  Separate time ranges with semicolons (e.g.,
+                  14:00-15:00;18:00-19:00)
+                </p>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Description</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white resize-none"
@@ -700,30 +793,48 @@ const SectionFormModal = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Images</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Images
+                </label>
                 <input
                   type="text"
                   name="images"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="Enter image URLs, separated by commas"
                 />
-                <p className="text-xs text-gray-500">Separate multiple image URLs with commas</p>
+                <p className="text-xs text-gray-500">
+                  Separate multiple image URLs with commas
+                </p>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Rules</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Rules
+                </label>
                 <input
                   type="text"
                   name="rules"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="Enter rules, separated by commas"
                 />
-                <p className="text-xs text-gray-500">Separate multiple rules with commas</p>
+                <p className="text-xs text-gray-500">
+                  Separate multiple rules with commas
+                </p>
               </div>
               <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
-                    <svg className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     <span>{error}</span>
                   </div>
@@ -734,7 +845,9 @@ const SectionFormModal = ({
                     onClick={onClose}
                     disabled={isSubmitting}
                     className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
-                      isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-100 hover:border-gray-400"
+                      isSubmitting
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:bg-gray-100 hover:border-gray-400"
                     }`}
                   >
                     Cancel
@@ -743,7 +856,9 @@ const SectionFormModal = ({
                     type="submit"
                     disabled={isSubmitting}
                     className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
-                      isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5 hover:bg-gray-800"
+                      isSubmitting
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:-translate-y-0.5 hover:bg-gray-800"
                     }`}
                   >
                     {isSubmitting ? (
@@ -754,7 +869,14 @@ const SectionFormModal = ({
                           fill="none"
                           viewBox="0 0 24 24"
                         >
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
                           <path
                             className="opacity-75"
                             fill="currentColor"
@@ -774,9 +896,13 @@ const SectionFormModal = ({
               </div>
             </form>
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-black">Existing Sections</h3>
+              <h3 className="text-lg font-semibold text-black">
+                Existing Sections
+              </h3>
               {sections.length === 0 ? (
-                <p className="text-gray-500">No sections found for this venue.</p>
+                <p className="text-gray-500">
+                  No sections found for this venue.
+                </p>
               ) : (
                 <div className="space-y-4">
                   {sections.map((section) => (
@@ -785,9 +911,13 @@ const SectionFormModal = ({
                       className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex justify-between items-center"
                     >
                       <div>
-                        <h4 className="text-md font-medium text-black">{section.name}</h4>
+                        <h4 className="text-md font-medium text-black">
+                          {section.name}
+                        </h4>
                         <p className="text-sm text-gray-600">
-                          Sport: {section.sport} | Price: {section.basePrice} ({section.priceModel}) | Capacity: {section.capacity} | Min Duration: {section.minimumDuration} min
+                          Sport: {section.sport} | Price: {section.basePrice} (
+                          {section.priceModel}) | Capacity: {section.capacity} |
+                          Min Duration: {section.minimumDuration} min
                         </p>
                       </div>
                       <button
@@ -855,16 +985,30 @@ const SlotSettingsFormModal = ({
                 <FaClock className="text-black text-sm" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-black">Manage Slot Settings</h2>
-                <p className="text-gray-600 text-sm">Configure available timings for this section</p>
+                <h2 className="text-2xl font-bold text-black">
+                  Manage Slot Settings
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  Configure available timings for this section
+                </p>
               </div>
             </div>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -877,13 +1021,19 @@ const SlotSettingsFormModal = ({
                   <FaClock className="text-black text-sm" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-black">Slot Settings</h3>
-                  <p className="text-sm text-gray-600">Define availability and slot duration</p>
+                  <h3 className="text-lg font-semibold text-black">
+                    Slot Settings
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Define availability and slot duration
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">Start Date</label>
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Start Date
+                  </label>
                   <input
                     type="date"
                     name="startDate"
@@ -892,7 +1042,9 @@ const SlotSettingsFormModal = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">End Date</label>
+                  <label className="block text-sm font-semibold text-gray-700">
+                    End Date
+                  </label>
                   <input
                     type="date"
                     name="endDate"
@@ -914,11 +1066,14 @@ const SlotSettingsFormModal = ({
                   placeholder="Monday,Tuesday,Wednesday"
                   defaultValue={slotSettings?.days.join(",") || ""}
                 />
-                <p className="text-xs text-gray-500">Separate days with commas (e.g., Monday,Tuesday)</p>
+                <p className="text-xs text-gray-500">
+                  Separate days with commas (e.g., Monday,Tuesday)
+                </p>
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Slot Duration (minutes) <span className="text-red-500">*</span>
+                  Slot Duration (minutes){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -946,22 +1101,41 @@ const SlotSettingsFormModal = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Available Timings (Generated)</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Available Timings (Generated)
+                </label>
                 <input
                   type="text"
                   name="timings"
                   readOnly
-                  value={generatedTimings().map((t) => `${t.startTime}-${t.endTime}`).join(";") || ""}
+                  value={
+                    generatedTimings()
+                      .map((t) => `${t.startTime}-${t.endTime}`)
+                      .join(";") || ""
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
                 />
-                <p className="text-xs text-gray-500">Timings are auto-generated based on venue and section constraints.</p>
+                <p className="text-xs text-gray-500">
+                  Timings are auto-generated based on venue and section
+                  constraints.
+                </p>
               </div>
             </div>
             <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
               {error && (
                 <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
-                  <svg className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <span>{error}</span>
                 </div>
@@ -972,7 +1146,9 @@ const SlotSettingsFormModal = ({
                   onClick={onClose}
                   disabled={isSubmitting}
                   className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
-                    isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-100 hover:border-gray-400"
+                    isSubmitting
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:bg-gray-100 hover:border-gray-400"
                   }`}
                 >
                   Cancel
@@ -981,7 +1157,9 @@ const SlotSettingsFormModal = ({
                   type="submit"
                   disabled={isSubmitting}
                   className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
-                    isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5 hover:bg-gray-800"
+                    isSubmitting
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:-translate-y-0.5 hover:bg-gray-800"
                   }`}
                 >
                   {isSubmitting ? (
@@ -992,7 +1170,14 @@ const SlotSettingsFormModal = ({
                         fill="none"
                         viewBox="0 0 24 24"
                       >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
                         <path
                           className="opacity-75"
                           fill="currentColor"
@@ -1026,28 +1211,33 @@ const ManageVenues = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isSubmittingVenue, setIsSubmittingVenue] = useState(false);
   const [isSubmittingSection, setIsSubmittingSection] = useState(false);
-  const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] = useState(false);
+  const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] =
+    useState(false);
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [showSlotSettingsModal, setShowSlotSettingsModal] = useState(false);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [slotSettings, setSlotSettings] = useState<SlotSettings | null>(null);
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null
+  );
+
+  const fetchVenues = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getVenues();
+      setVenues(data);
+      setLoading(false);
+    } catch (err) {
+      setError("Failed to fetch venues");
+      setLoading(false);
+      console.error(err);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchVenues = async () => {
-      try {
-        const data = await getVenues();
-        setVenues(data);
-        setLoading(false);
-      } catch (err) {
-        setError("Failed to fetch venues");
-        setLoading(false);
-        console.error(err);
-      }
-    };
     fetchVenues();
-  }, []);
+  }, [fetchVenues]);
 
   const fetchSections = useCallback(async (venueId: string) => {
     try {
@@ -1074,10 +1264,26 @@ const ManageVenues = () => {
       capacity: parseInt(formData.get("capacity") as string),
       description: formData.get("description") as string,
       minimumDuration: parseInt(formData.get("minimumDuration") as string),
-      ownerBlockedTime: (formData.get("ownerBlockedTime") as string)?.split(";").map((t) => t.trim()).filter(Boolean) || [],
-      maintenanceTime: (formData.get("maintenanceTime") as string)?.split(";").map((t) => t.trim()).filter(Boolean) || [],
-      images: (formData.get("images") as string)?.split(",").map((s) => s.trim()).filter(Boolean) || [],
-      rules: (formData.get("rules") as string)?.split(",").map((s) => s.trim()).filter(Boolean) || [],
+      ownerBlockedTime:
+        (formData.get("ownerBlockedTime") as string)
+          ?.split(";")
+          .map((t) => t.trim())
+          .filter(Boolean) || [],
+      maintenanceTime:
+        (formData.get("maintenanceTime") as string)
+          ?.split(";")
+          .map((t) => t.trim())
+          .filter(Boolean) || [],
+      images:
+        (formData.get("images") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
+      rules:
+        (formData.get("rules") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
     };
 
     try {
@@ -1086,15 +1292,18 @@ const ManageVenues = () => {
       setShowSectionModal(false);
     } catch (err) {
       const errorMessage = (err as Error).message;
-      setError(`The venue does not offer: ${sectionData.sport}. (${errorMessage})`);
+      setError(
+        `The venue does not offer: ${sectionData.sport}. (${errorMessage})`
+      );
       console.error("Error:", errorMessage);
-      }
-    finally {
+    } finally {
       setIsSubmittingSection(false);
     }
   };
 
-  const handleAddOrUpdateSlotSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddOrUpdateSlotSettings = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setIsSubmittingSlotSettings(true);
     setError(null);
@@ -1105,7 +1314,11 @@ const ManageVenues = () => {
       sectionId: selectedSectionId!,
       startDate: formData.get("startDate") as string,
       endDate: formData.get("endDate") as string,
-      days: (formData.get("days") as string)?.split(",").map((d) => d.trim()).filter(Boolean) || [],
+      days:
+        (formData.get("days") as string)
+          ?.split(",")
+          .map((d) => d.trim())
+          .filter(Boolean) || [],
       duration: parseInt(formData.get("duration") as string) || 60,
       bookingAllowed: parseInt(formData.get("bookingAllowed") as string) || 1,
       timings: [] as TimingSlot[],
@@ -1143,6 +1356,7 @@ const ManageVenues = () => {
     if (window.confirm("Are you sure you want to delete this venue?")) {
       try {
         await deleteVenue(id);
+        await fetchVenues();
         setVenues(venues.filter((venue) => venue._id !== id));
       } catch (err) {
         setError("Failed to delete venue");
@@ -1160,7 +1374,10 @@ const ManageVenues = () => {
     const venueData = {
       name: formData.get("venueName") as string,
       description: formData.get("description") as string,
-      sports: (formData.get("sports") as string).split(",").map((s: string) => s.trim()).filter(Boolean),
+      sports: (formData.get("sports") as string)
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean),
       address: {
         street: formData.get("street") as string,
         city: formData.get("city") as string,
@@ -1178,15 +1395,20 @@ const ManageVenues = () => {
     try {
       if (editingVenue) {
         const updatedVenue = await updateVenue(editingVenue._id, venueData);
-        setVenues(venues.map((v) => (v._id === editingVenue._id ? updatedVenue : v)));
+        setVenues(
+          venues.map((v) => (v._id === editingVenue._id ? updatedVenue : v))
+        );
       } else {
         const newVenue = await createVenue(venueData);
         setVenues([...venues, newVenue]);
       }
+      await fetchVenues();
       setShowAddModal(false);
       setEditingVenue(null);
     } catch (err) {
-      setError(editingVenue ? "Failed to update venue" : "Failed to create venue");
+      setError(
+        editingVenue ? "Failed to update venue" : "Failed to create venue"
+      );
       console.error(err);
     } finally {
       setIsSubmittingVenue(false);
@@ -1209,7 +1431,10 @@ const ManageVenues = () => {
     setShowSectionModal(true);
   };
 
-  const handleOpenSlotSettingsModal = async (venueId: string, sectionId: string) => {
+  const handleOpenSlotSettingsModal = async (
+    venueId: string,
+    sectionId: string
+  ) => {
     setSelectedVenueId(venueId);
     setSelectedSectionId(sectionId);
     try {
@@ -1245,7 +1470,9 @@ const ManageVenues = () => {
   };
 
   const activeVenues = venues.filter((v) => v.isActive).length;
-  const multiSportVenues = venues.filter((v) => v.sports.length > 1).length;
+  const multiSportVenues = venues.filter(
+    (v) => Array.isArray(v.sports) && v.sports.length > 1
+  ).length;
 
   if (loading) {
     return (
@@ -1288,7 +1515,9 @@ const ManageVenues = () => {
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      viewMode === "grid" ? "bg-white text-black shadow-sm" : "text-gray-300 hover:text-white"
+                      viewMode === "grid"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-gray-300 hover:text-white"
                     }`}
                   >
                     Grid
@@ -1296,7 +1525,9 @@ const ManageVenues = () => {
                   <button
                     onClick={() => setViewMode("list")}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      viewMode === "list" ? "bg-white text-black shadow-sm" : "text-gray-300 hover:text-white"
+                      viewMode === "list"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-gray-300 hover:text-white"
                     }`}
                   >
                     List
@@ -1318,10 +1549,30 @@ const ManageVenues = () => {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { title: "Total Venues", value: venues.length, icon: FaChartBar, color: "bg-gray-100" },
-                { title: "Active Locations", value: activeVenues, icon: FaEye, color: "bg-gray-100" },
-                { title: "Contact Provided", value: venues.length, icon: FaPhone, color: "bg-gray-100" },
-                { title: "Multi-Sport", value: multiSportVenues, icon: FaUsers, color: "bg-gray-100" },
+                {
+                  title: "Total Venues",
+                  value: venues.length,
+                  icon: FaChartBar,
+                  color: "bg-gray-100",
+                },
+                {
+                  title: "Active Locations",
+                  value: activeVenues,
+                  icon: FaEye,
+                  color: "bg-gray-100",
+                },
+                {
+                  title: "Contact Provided",
+                  value: venues.length,
+                  icon: FaPhone,
+                  color: "bg-gray-100",
+                },
+                {
+                  title: "Multi-Sport",
+                  value: multiSportVenues,
+                  icon: FaUsers,
+                  color: "bg-gray-100",
+                },
               ].map((stat, index) => (
                 <div
                   key={index}
@@ -1329,10 +1580,16 @@ const ManageVenues = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                      <p className="text-3xl font-bold text-black">{stat.value}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">
+                        {stat.title}
+                      </p>
+                      <p className="text-3xl font-bold text-black">
+                        {stat.value}
+                      </p>
                     </div>
-                    <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center`}>
+                    <div
+                      className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center`}
+                    >
                       <stat.icon className="text-black text-xl" />
                     </div>
                   </div>
@@ -1347,8 +1604,12 @@ const ManageVenues = () => {
             {venues.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-6xl mb-4">🏟️</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No venues found</h3>
-                <p className="text-gray-500 mb-6">Get started by adding your first venue</p>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  No venues found
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Get started by adding your first venue
+                </p>
                 <button
                   onClick={handleAddVenue}
                   className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
@@ -1359,7 +1620,11 @@ const ManageVenues = () => {
               </div>
             ) : (
               <div
-                className={`gap-6 ${viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "flex flex-col"}`}
+                className={`gap-6 ${
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+                    : "flex flex-col"
+                }`}
               >
                 {venues.map((venue) => (
                   <VenueCard
@@ -1391,7 +1656,9 @@ const ManageVenues = () => {
             sections={sections}
             onSubmit={handleAddSection}
             onClose={closeSectionModal}
-            onManageSlots={(sectionId) => handleOpenSlotSettingsModal(selectedVenueId, sectionId)}
+            onManageSlots={(sectionId) =>
+              handleOpenSlotSettingsModal(selectedVenueId, sectionId)
+            }
             isSubmitting={isSubmittingSection}
             error={error}
           />
