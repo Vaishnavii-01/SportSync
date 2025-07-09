@@ -1,12 +1,15 @@
 // src/controllers/bookingController.ts
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Booking from '../models/booking';
 import SlotSettings from '../models/slotSettings';
 import Section from '../models/section';
-import Venue from '../models/venue';
 
-// @desc Create a new booking
+// @desc Create a new booking (with transaction support)
 export const createBooking = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
     const {
       userId,
@@ -18,20 +21,28 @@ export const createBooking = async (req: Request, res: Response) => {
       slotId
     } = req.body;
 
+    // Validate inputs
+    if (!userId || !venueId || !sectionId || !date || !startTime || !endTime || !slotId) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
     // Validate section exists
-    const section = await Section.findById(sectionId);
+    const section = await Section.findById(sectionId).session(session);
     if (!section) {
+      await session.abortTransaction();
       return res.status(404).json({ error: 'Section not found' });
     }
 
-    // Get slot settings to validate the booking
+    // Get active slot settings
     const slotSettings = await SlotSettings.findOne({
       section: sectionId,
       isActive: true
-    });
+    }).session(session);
 
     if (!slotSettings) {
-      return res.status(404).json({ error: 'No slot settings found for this section' });
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'No active slot settings found' });
     }
 
     // Parse dates
@@ -39,22 +50,48 @@ export const createBooking = async (req: Request, res: Response) => {
     const bookingStartTime = new Date(startTime);
     const bookingEndTime = new Date(endTime);
 
-    // Check if booking already exists for this slot
+    // Check booking constraints
+    const today = new Date();
+    const bookingDay = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][bookingDate.getDay()];
+    
+    // Validate against slot settings
+    if (slotSettings.startDate && bookingDate < slotSettings.startDate) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Booking date before start date' });
+    }
+
+    if (slotSettings.endDate && bookingDate > slotSettings.endDate) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Booking date after end date' });
+    }
+
+    if (slotSettings.days.length > 0 && !slotSettings.days.includes(bookingDay)) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'No availability on this day' });
+    }
+
+    // Check for existing booking
     const existingBooking = await Booking.findOne({
       section: sectionId,
       date: bookingDate,
       startTime: bookingStartTime,
       endTime: bookingEndTime,
       status: { $ne: 'cancelled' }
-    });
+    }).session(session);
 
     if (existingBooking) {
-      return res.status(400).json({ error: 'This slot is already booked' });
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Slot already booked' });
     }
 
     // Calculate duration and price
     const duration = (bookingEndTime.getTime() - bookingStartTime.getTime()) / (1000 * 60);
-    const totalPrice = section.basePrice; // You can modify this based on your pricing logic
+    let totalPrice = slotSettings.basePrice;
+
+    // Apply pricing model
+    if (slotSettings.priceModel === 'perHour') {
+      totalPrice = slotSettings.basePrice * (duration / 60);
+    }
 
     // Create the booking
     const newBooking = new Booking({
@@ -67,13 +104,16 @@ export const createBooking = async (req: Request, res: Response) => {
       totalPrice,
       duration,
       slotId,
-      status: 'pending',
-      paymentStatus: 'pending'
+      status: 'confirmed',
+      paymentStatus: 'completed'
     });
 
-    await newBooking.save();
+    await newBooking.save({ session });
 
-    // Populate the booking with related data
+    // Commit transaction
+    await session.commitTransaction();
+
+    // Populate booking details for response
     const populatedBooking = await Booking.findById(newBooking._id)
       .populate('user', 'name email')
       .populate('venue', 'name address')
@@ -85,57 +125,51 @@ export const createBooking = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
+    await session.abortTransaction();
     console.error('Create Booking Error:', error.message);
-    res.status(500).json({ error: 'Error creating booking', details: error.message });
+    res.status(500).json({ 
+      error: 'Error creating booking',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    session.endSession();
   }
 };
 
-// @desc Get available slots with booking status
+// @desc Get available slots with booking status (optimized)
 export const getAvailableSlotsWithBookings = async (req: Request, res: Response) => {
   try {
     const { sectionId, date } = req.query;
 
+    // Validate inputs
     if (!sectionId || !date) {
       return res.status(400).json({ error: 'Section ID and date are required' });
     }
 
-    // Get slot settings
+    // Get slot settings with caching potential
     const slotSettings = await SlotSettings.findOne({
       section: sectionId,
       isActive: true
     }).populate('section', 'name sport basePrice');
 
     if (!slotSettings) {
-      return res.status(404).json({ error: 'No slot settings found for this section' });
+      return res.status(404).json({ error: 'No slot settings found' });
     }
 
     const targetDate = new Date(date as string);
     const dayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][targetDate.getDay()];
 
-    // Validate date constraints (same logic as before)
+    // Validate date constraints
     if (slotSettings.startDate && targetDate < slotSettings.startDate) {
-      return res.status(400).json({ error: 'Date is before the start date' });
+      return res.status(400).json({ error: 'Date before start date' });
     }
 
     if (slotSettings.endDate && targetDate > slotSettings.endDate) {
-      return res.status(400).json({ error: 'Date is after the end date' });
+      return res.status(400).json({ error: 'Date after end date' });
     }
 
     if (slotSettings.days.length > 0 && !slotSettings.days.includes(dayOfWeek)) {
-      return res.status(400).json({ error: 'Slots are not available on this day' });
-    }
-
-    // Check booking window
-    const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > slotSettings.bookingAllowed) {
-      return res.status(400).json({ error: 'Booking is not allowed this far in advance' });
-    }
-
-    if (diffDays < 0) {
-      return res.status(400).json({ error: 'Cannot book slots for past dates' });
+      return res.status(400).json({ error: 'No availability on this day' });
     }
 
     // Generate all possible slots
@@ -152,32 +186,31 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
       const endTime = new Date(targetDate);
       endTime.setHours(endHour, endMin, 0, 0);
 
-      const current = new Date(startTime);
+      let current = new Date(startTime);
       while (current < endTime) {
         const slotEndTime = new Date(current.getTime() + slotSettings.duration * 60000);
-        
         if (slotEndTime > endTime) break;
 
         allSlots.push({
           id: `${sectionId}-${current.getTime()}`,
-          sectionId: sectionId,
+          sectionId,
           sectionName: section.name,
           sport: section.sport,
           date: targetDate.toISOString().split('T')[0],
-          startTime: current.toTimeString().slice(0, 5),
-          endTime: slotEndTime.toTimeString().slice(0, 5),
+          startTime: current.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: slotEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           fullStartTime: new Date(current),
           fullEndTime: new Date(slotEndTime),
           duration: slotSettings.duration,
-          price: section.basePrice,
-          isAvailable: true
+          price: calculatePrice(section.basePrice, slotSettings.priceModel, slotSettings.duration),
+          priceModel: slotSettings.priceModel
         });
 
-        current.setTime(current.getTime() + slotSettings.duration * 60000);
+        current = new Date(slotEndTime);
       }
     }
 
-    // Get all bookings for this date and section
+    // Get bookings in a single query
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
@@ -185,19 +218,21 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
 
     const bookings = await Booking.find({
       section: sectionId,
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      },
+      date: { $gte: startOfDay, $lte: endOfDay },
       status: { $ne: 'cancelled' }
     }).populate('user', 'name email');
 
-    // Mark slots as unavailable if they're booked
-    const slotsWithBookingStatus = allSlots.map(slot => {
-      const booking = bookings.find(b => 
-        b.startTime.getTime() === slot.fullStartTime.getTime() &&
-        b.endTime.getTime() === slot.fullEndTime.getTime()
-      );
+    // Create booking map for faster lookup
+    const bookingMap = new Map();
+    bookings.forEach(booking => {
+      const key = `${booking.startTime.getTime()}-${booking.endTime.getTime()}`;
+      bookingMap.set(key, booking);
+    });
+
+    // Mark slot availability
+    const slotsWithStatus = allSlots.map(slot => {
+      const key = `${slot.fullStartTime.getTime()}-${slot.fullEndTime.getTime()}`;
+      const booking = bookingMap.get(key);
 
       return {
         ...slot,
@@ -205,92 +240,130 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
         booking: booking ? {
           id: booking._id,
           user: booking.user,
-          status: booking.status,
-          paymentStatus: booking.paymentStatus
+          status: booking.status
         } : null
       };
     });
 
-    const availableSlots = slotsWithBookingStatus.filter(slot => slot.isAvailable);
-    const bookedSlots = slotsWithBookingStatus.filter(slot => !slot.isAvailable);
-
     res.status(200).json({
-      sectionId: sectionId,
-      date: date,
-      dayOfWeek: dayOfWeek,
-      totalSlots: slotsWithBookingStatus.length,
-      availableSlots: availableSlots,
-      bookedSlots: bookedSlots,
-      availableCount: availableSlots.length,
-      bookedCount: bookedSlots.length,
-      allSlots: slotsWithBookingStatus
+      sectionId,
+      date: targetDate.toISOString().split('T')[0],
+      dayOfWeek,
+      slots: slotsWithStatus,
+      meta: {
+        total: slotsWithStatus.length,
+        available: slotsWithStatus.filter(s => s.isAvailable).length,
+        booked: slotsWithStatus.filter(s => !s.isAvailable).length
+      }
     });
 
   } catch (error: any) {
-    console.error('Get Available Slots With Bookings Error:', error.message);
-    res.status(500).json({ error: 'Error fetching slots', details: error.message });
+    console.error('Get Slots Error:', error.message);
+    res.status(500).json({ 
+      error: 'Error fetching slots',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
-// @desc Get user bookings
+// Helper function for price calculation
+const calculatePrice = (basePrice: number, priceModel: string, duration: number): number => {
+  switch (priceModel) {
+    case 'perHour':
+      return basePrice * (duration / 60);
+    case 'perSession':
+      return basePrice;
+    default: // perSlot
+      return basePrice;
+  }
+};
+
+// @desc Get user bookings (with pagination)
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
     const bookings = await Booking.find({ user: userId })
       .populate('venue', 'name address')
       .populate('section', 'name sport')
-      .sort({ date: -1, startTime: -1 });
+      .sort({ date: -1, startTime: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Booking.countDocuments({ user: userId });
 
     res.status(200).json({
-      userId: userId,
-      bookings: bookings
+      data: bookings,
+      meta: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
     });
 
   } catch (error: any) {
-    console.error('Get User Bookings Error:', error.message);
-    res.status(500).json({ error: 'Error fetching user bookings', details: error.message });
+    console.error('Get Bookings Error:', error.message);
+    res.status(500).json({ 
+      error: 'Error fetching bookings',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
-// @desc Cancel a booking
+// @desc Cancel a booking (with transaction)
 export const cancelBooking = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { bookingId } = req.params;
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId).session(session);
     if (!booking) {
+      await session.abortTransaction();
       return res.status(404).json({ error: 'Booking not found' });
     }
 
     if (booking.status === 'cancelled') {
-      return res.status(400).json({ error: 'Booking is already cancelled' });
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Booking already cancelled' });
     }
 
-    // Check if booking can be cancelled (not in the past)
     if (booking.startTime <= new Date()) {
+      await session.abortTransaction();
       return res.status(400).json({ error: 'Cannot cancel past bookings' });
     }
 
     booking.status = 'cancelled';
-    await booking.save();
+    await booking.save({ session });
+
+    await session.commitTransaction();
 
     res.status(200).json({
       message: 'Booking cancelled successfully',
-      booking: booking
+      booking
     });
 
   } catch (error: any) {
+    await session.abortTransaction();
     console.error('Cancel Booking Error:', error.message);
-    res.status(500).json({ error: 'Error cancelling booking', details: error.message });
+    res.status(500).json({ 
+      error: 'Error cancelling booking',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    session.endSession();
   }
 };
 
-// @desc Get venue bookings
+// @desc Get venue bookings (optimized)
 export const getVenueBookings = async (req: Request, res: Response) => {
   try {
     const { venueId } = req.params;
-    const { date, status } = req.query;
+    const { date, status, page = 1, limit = 10 } = req.query;
 
     const query: any = { venue: venueId };
     
@@ -301,10 +374,7 @@ export const getVenueBookings = async (req: Request, res: Response) => {
       const endOfDay = new Date(targetDate);
       endOfDay.setHours(23, 59, 59, 999);
       
-      query.date = {
-        $gte: startOfDay,
-        $lte: endOfDay
-      };
+      query.date = { $gte: startOfDay, $lte: endOfDay };
     }
 
     if (status) {
@@ -314,16 +384,27 @@ export const getVenueBookings = async (req: Request, res: Response) => {
     const bookings = await Booking.find(query)
       .populate('user', 'name email phone')
       .populate('section', 'name sport')
-      .sort({ date: 1, startTime: 1 });
+      .sort({ date: 1, startTime: 1 })
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+
+    const total = await Booking.countDocuments(query);
 
     res.status(200).json({
-      venueId: venueId,
-      count: bookings.length,
-      bookings: bookings
+      data: bookings,
+      meta: {
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / Number(limit)),
+        limit: Number(limit)
+      }
     });
 
   } catch (error: any) {
     console.error('Get Venue Bookings Error:', error.message);
-    res.status(500).json({ error: 'Error fetching venue bookings', details: error.message });
+    res.status(500).json({ 
+      error: 'Error fetching bookings',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
