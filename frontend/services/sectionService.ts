@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api/sections';
 const SLOT_SETTINGS_URL = 'http://localhost:5000/api/slot-settings';
+const BOOKINGS_URL = 'http://localhost:5000/api/bookings';
 
 export interface SectionData {
   name: string;
@@ -13,6 +14,27 @@ export interface SectionData {
   description?: string;
   images?: string[];
   rules?: string[];
+}
+
+export interface SlotSettingsData {
+  venueId: string;
+  sectionId: string;
+  startDate?: string;
+  endDate?: string;
+  days: string[];
+  timings: { startTime: string; endTime: string }[];
+  duration: number;
+  bookingAllowed: number;
+}
+
+export interface BookingData {
+  userId: string;
+  venueId: string;
+  sectionId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  slotId: string;
 }
 
 // Create a new section
@@ -73,6 +95,28 @@ export const deleteSection = async (sectionId: string) => {
   }
 };
 
+// Create or update slot settings
+export const createOrUpdateSlotSettings = async (slotSettingsData: SlotSettingsData) => {
+  try {
+    const response = await axios.post(SLOT_SETTINGS_URL, slotSettingsData);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating/updating slot settings:', error);
+    throw new Error(error.response?.data?.error || 'Failed to manage slot settings');
+  }
+};
+
+// Get slot settings for a section
+export const getSlotSettings = async (sectionId: string) => {
+  try {
+    const response = await axios.get(`${SLOT_SETTINGS_URL}/section/${sectionId}`);
+    return response.data.slotSettings;
+  } catch (error: any) {
+    console.error('Error fetching slot settings:', error);
+    throw new Error(error.response?.data?.error || 'Failed to fetch slot settings');
+  }
+};
+
 // Get available slots for a section on a specific date
 export const getAvailableSlots = async (sectionId: string, date: string) => {
   try {
@@ -83,5 +127,16 @@ export const getAvailableSlots = async (sectionId: string, date: string) => {
   } catch (error: any) {
     console.error('Error fetching available slots:', error);
     throw new Error(error.response?.data?.error || 'Failed to fetch available slots');
+  }
+};
+
+// Create a booking
+export const createBooking = async (bookingData: BookingData) => {
+  try {
+    const response = await axios.post(BOOKINGS_URL, bookingData);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating booking:', error);
+    throw new Error(error.response?.data?.error || 'Failed to create booking');
   }
 };
