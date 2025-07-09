@@ -1085,9 +1085,11 @@ const ManageVenues = () => {
       await fetchSections(selectedVenueId!);
       setShowSectionModal(false);
     } catch (err) {
-      setError(`Failed to create section: ${(err as Error).message}`);
-      console.error(err);
-    } finally {
+      const errorMessage = (err as Error).message;
+      setError(`The venue does not offer: ${sectionData.sport}. (${errorMessage})`);
+      console.error("Error:", errorMessage);
+      }
+    finally {
       setIsSubmittingSection(false);
     }
   };
