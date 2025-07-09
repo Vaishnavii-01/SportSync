@@ -735,52 +735,7 @@ const SectionFormModal = ({
                   placeholder="Enter capacity"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Minimum Duration (minutes){" "}
-                  <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="minimumDuration"
-                  required
-                  min="1"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                  placeholder="Enter minimum duration (e.g., 30)"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Owner Blocked Time
-                </label>
-                <input
-                  type="text"
-                  name="ownerBlockedTime"
-                  pattern="(\d{2}:\d{2}-\d{2}:\d{2}(;\d{2}:\d{2}-\d{2}:\d{2})*)?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                  placeholder="e.g., 09:00-10:00;13:00-14:00"
-                />
-                <p className="text-xs text-gray-500">
-                  Separate time ranges with semicolons (e.g.,
-                  09:00-10:00;13:00-14:00)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Maintenance Time
-                </label>
-                <input
-                  type="text"
-                  name="maintenanceTime"
-                  pattern="(\d{2}:\d{2}-\d{2}:\d{2}(;\d{2}:\d{2}-\d{2}:\d{2})*)?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                  placeholder="e.g., 14:00-15:00;18:00-19:00"
-                />
-                <p className="text-xs text-gray-500">
-                  Separate time ranges with semicolons (e.g.,
-                  14:00-15:00;18:00-19:00)
-                </p>
-              </div>
+
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Description
@@ -818,6 +773,21 @@ const SectionFormModal = ({
                 />
                 <p className="text-xs text-gray-500">
                   Separate multiple rules with commas
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Active
+                </label>
+                <select
+                  name="active"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                >
+                  <option value="yes">YES</option>
+                  <option value="no">NO</option>
+                </select>
+                <p className="text-xs text-gray-500">
+                  Select whether active or not
                 </p>
               </div>
               <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
@@ -1284,6 +1254,7 @@ const ManageVenues = () => {
           ?.split(",")
           .map((s) => s.trim())
           .filter(Boolean) || [],
+      isActive: formData.get("active") === "yes",
     };
 
     try {
