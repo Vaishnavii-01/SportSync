@@ -84,7 +84,9 @@ const SectionCard = ({
       <div className="p-6">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-bold text-black mb-2">{section.name}</h3>
+            <h3 className="text-xl font-bold text-black mb-2">
+              {section.name}
+            </h3>
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
                 {section.sport}
@@ -139,7 +141,8 @@ const SectionCard = ({
             </span>
           </div>
           <div className="text-sm font-medium text-gray-700">
-            ₹{section.basePrice} / {section.priceModel === "perHour" ? "hour" : "slot"}
+            ₹{section.basePrice} /{" "}
+            {section.priceModel === "perHour" ? "hour" : "slot"}
           </div>
         </div>
       </div>
@@ -173,9 +176,13 @@ const SectionFormModal = ({
               <FaPlus className="text-black text-sm" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-black">{isEditMode ? "Edit Section" : "Add New Section"}</h2>
+              <h2 className="text-2xl font-bold text-black">
+                {isEditMode ? "Edit Section" : "Add New Section"}
+              </h2>
               <p className="text-gray-600 text-sm">
-                {isEditMode ? `Update details for ${section?.name}` : `Create a new section for ${venue.name}`}
+                {isEditMode
+                  ? `Update details for ${section?.name}`
+                  : `Create a new section for ${venue.name}`}
               </p>
             </div>
           </div>
@@ -430,7 +437,10 @@ const SlotSettingsFormModal = ({
   venue: Venue;
   section: Section;
   slotSettings: SlotSettings | null;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>, timings: TimingSlot[]) => void;
+  onSubmit: (
+    e: React.FormEvent<HTMLFormElement>,
+    timings: TimingSlot[]
+  ) => void;
   onClose: () => void;
   isSubmitting: boolean;
   error: string | null;
@@ -438,7 +448,9 @@ const SlotSettingsFormModal = ({
   const [timings, setTimings] = useState<TimingSlot[]>(
     slotSettings?.timings || [{ startTime: "", endTime: "" }]
   );
-  const [duration, setDuration] = useState(slotSettings?.duration || section.minimumDuration || 60);
+  const [duration, setDuration] = useState(
+    slotSettings?.duration || section.minimumDuration || 60
+  );
   const [generatedSlots, setGeneratedSlots] = useState<string[]>([]);
 
   const addTimingSlot = () => {
@@ -451,38 +463,47 @@ const SlotSettingsFormModal = ({
     }
   };
 
-  const updateTimingSlot = (index: number, field: keyof TimingSlot, value: string) => {
+  const updateTimingSlot = (
+    index: number,
+    field: keyof TimingSlot,
+    value: string
+  ) => {
     const newTimings = [...timings];
     newTimings[index][field] = value;
     setTimings(newTimings);
     generateSlots(newTimings, duration);
   };
 
-  const generateSlots = useCallback((timings: TimingSlot[], duration: number) => {
-    const slots: string[] = [];
-    timings.forEach(({ startTime, endTime }) => {
-      if (!startTime || !endTime) return;
-      const [startHour, startMin] = startTime.split(":").map(Number);
-      const [endHour, endMin] = endTime.split(":").map(Number);
+  const generateSlots = useCallback(
+    (timings: TimingSlot[], duration: number) => {
+      const slots: string[] = [];
+      timings.forEach(({ startTime, endTime }) => {
+        if (!startTime || !endTime) return;
+        const [startHour, startMin] = startTime.split(":").map(Number);
+        const [endHour, endMin] = endTime.split(":").map(Number);
 
-      const start = new Date();
-      start.setHours(startHour, startMin, 0, 0);
+        const start = new Date();
+        start.setHours(startHour, startMin, 0, 0);
 
-      const end = new Date();
-      end.setHours(endHour, endMin, 0, 0);
+        const end = new Date();
+        end.setHours(endHour, endMin, 0, 0);
 
-      let current = new Date(start);
-      while (current < end) {
-        const slotEnd = new Date(current.getTime() + duration * 60000);
-        if (slotEnd > end) break;
-        slots.push(
-          `${current.toTimeString().slice(0, 5)}-${slotEnd.toTimeString().slice(0, 5)}`
-        );
-        current = slotEnd;
-      }
-    });
-    setGeneratedSlots(slots);
-  }, []);
+        let current = new Date(start);
+        while (current < end) {
+          const slotEnd = new Date(current.getTime() + duration * 60000);
+          if (slotEnd > end) break;
+          slots.push(
+            `${current.toTimeString().slice(0, 5)}-${slotEnd
+              .toTimeString()
+              .slice(0, 5)}`
+          );
+          current = slotEnd;
+        }
+      });
+      setGeneratedSlots(slots);
+    },
+    []
+  );
 
   useEffect(() => {
     generateSlots(timings, duration);
@@ -554,7 +575,7 @@ const SlotSettingsFormModal = ({
                     type="date"
                     name="startDate"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    defaultValue={slotSettings?.startDate?.split('T')[0] || ""}
+                    defaultValue={slotSettings?.startDate?.split("T")[0] || ""}
                   />
                 </div>
                 <div className="space-y-2">
@@ -565,7 +586,7 @@ const SlotSettingsFormModal = ({
                     type="date"
                     name="endDate"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    defaultValue={slotSettings?.endDate?.split('T')[0] || ""}
+                    defaultValue={slotSettings?.endDate?.split("T")[0] || ""}
                   />
                 </div>
               </div>
@@ -583,7 +604,8 @@ const SlotSettingsFormModal = ({
                   defaultValue={slotSettings?.days.join(",") || ""}
                 />
                 <p className="text-xs text-gray-500">
-                  Separate days with commas (e.g., MON,TUE,WED). Use uppercase: MON, TUE, WED, THU, FRI, SAT, SUN
+                  Separate days with commas (e.g., MON,TUE,WED). Use uppercase:
+                  MON, TUE, WED, THU, FRI, SAT, SUN
                 </p>
               </div>
               <div className="space-y-2">
@@ -596,14 +618,18 @@ const SlotSettingsFormModal = ({
                       type="time"
                       required
                       value={timing.startTime}
-                      onChange={(e) => updateTimingSlot(index, "startTime", e.target.value)}
+                      onChange={(e) =>
+                        updateTimingSlot(index, "startTime", e.target.value)
+                      }
                       className="w-1/2 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     />
                     <input
                       type="time"
                       required
                       value={timing.endTime}
-                      onChange={(e) => updateTimingSlot(index, "endTime", e.target.value)}
+                      onChange={(e) =>
+                        updateTimingSlot(index, "endTime", e.target.value)
+                      }
                       className="w-1/2 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     />
                     {timings.length > 1 && (
@@ -625,12 +651,14 @@ const SlotSettingsFormModal = ({
                   Add Timing Slot
                 </button>
                 <p className="text-xs text-gray-500">
-                  Add multiple time ranges for availability (e.g., 09:00-11:00, 17:00-18:00)
+                  Add multiple time ranges for availability (e.g., 09:00-11:00,
+                  17:00-18:00)
                 </p>
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Slot Duration (minutes) <span className="text-red-500">*</span>
+                  Slot Duration (minutes){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -640,11 +668,18 @@ const SlotSettingsFormModal = ({
                   max="480"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="60"
-                  defaultValue={slotSettings?.duration || section.minimumDuration || 60}
-                  onChange={(e) => setDuration(parseInt(e.target.value) || section.minimumDuration || 60)}
+                  defaultValue={
+                    slotSettings?.duration || section.minimumDuration || 60
+                  }
+                  onChange={(e) =>
+                    setDuration(
+                      parseInt(e.target.value) || section.minimumDuration || 60
+                    )
+                  }
                 />
                 <p className="text-xs text-gray-500">
-                  Duration must be between {section.minimumDuration || 5} and 480 minutes
+                  Duration must be between {section.minimumDuration || 5} and
+                  480 minutes
                 </p>
               </div>
               <div className="space-y-2">
@@ -654,10 +689,14 @@ const SlotSettingsFormModal = ({
                 <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100">
                   {generatedSlots.length > 0 ? (
                     generatedSlots.map((slot, index) => (
-                      <div key={index} className="text-sm text-gray-700">{slot}</div>
+                      <div key={index} className="text-sm text-gray-700">
+                        {slot}
+                      </div>
                     ))
                   ) : (
-                    <div className="text-sm text-gray-500">No slots generated yet</div>
+                    <div className="text-sm text-gray-500">
+                      No slots generated yet
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-gray-500">
@@ -666,7 +705,8 @@ const SlotSettingsFormModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Max Bookings Allowed (days in advance) <span className="text-red-500">*</span>
+                  Max Bookings Allowed (days in advance){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -781,7 +821,9 @@ const SlotSettingsFormModal = ({
                   ) : (
                     <span className="flex items-center">
                       <FaSave className="mr-2" />
-                      {slotSettings ? "Update Slot Settings" : "Create Slot Settings"}
+                      {slotSettings
+                        ? "Update Slot Settings"
+                        : "Create Slot Settings"}
                     </span>
                   )}
                 </button>
@@ -862,7 +904,9 @@ const SlotSettingsListModal = ({
               </button>
             </div>
             {slotSettingsList.length === 0 ? (
-              <p className="text-gray-600">No slot settings found. Create one to get started.</p>
+              <p className="text-gray-600">
+                No slot settings found. Create one to get started.
+              </p>
             ) : (
               <div className="space-y-4">
                 {slotSettingsList.map((settings) => (
@@ -881,16 +925,21 @@ const SlotSettingsListModal = ({
                         Bookings Allowed: {settings.bookingAllowed} days
                       </p>
                       <p className="text-sm text-gray-600">
-                        Timings: {settings.timings.map(t => `${t.startTime}-${t.endTime}`).join(", ")}
+                        Timings:{" "}
+                        {settings.timings
+                          .map((t) => `${t.startTime}-${t.endTime}`)
+                          .join(", ")}
                       </p>
                       {settings.startDate && (
                         <p className="text-sm text-gray-600">
-                          Start Date: {new Date(settings.startDate).toLocaleDateString()}
+                          Start Date:{" "}
+                          {new Date(settings.startDate).toLocaleDateString()}
                         </p>
                       )}
                       {settings.endDate && (
                         <p className="text-sm text-gray-600">
-                          End Date: {new Date(settings.endDate).toLocaleDateString()}
+                          End Date:{" "}
+                          {new Date(settings.endDate).toLocaleDateString()}
                         </p>
                       )}
                       <p className="text-sm text-gray-600">
@@ -942,13 +991,17 @@ const ManageSections = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showSlotSettingsListModal, setShowSlotSettingsListModal] = useState(false);
-  const [showSlotSettingsFormModal, setShowSlotSettingsFormModal] = useState(false);
+  const [showSlotSettingsListModal, setShowSlotSettingsListModal] =
+    useState(false);
+  const [showSlotSettingsFormModal, setShowSlotSettingsFormModal] =
+    useState(false);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
-  const [selectedSlotSettings, setSelectedSlotSettings] = useState<SlotSettings | null>(null);
+  const [selectedSlotSettings, setSelectedSlotSettings] =
+    useState<SlotSettings | null>(null);
   const [slotSettingsList, setSlotSettingsList] = useState<SlotSettings[]>([]);
   const [isSubmittingSection, setIsSubmittingSection] = useState(false);
-  const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] = useState(false);
+  const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] =
+    useState(false);
 
   const fetchVenueAndSections = useCallback(async () => {
     if (!venueId) {
@@ -993,7 +1046,7 @@ const ManageSections = () => {
       return;
     }
 
-    const sectionData: Omit<Section, '_id'> = {
+    const sectionData: Omit<Section, "_id"> = {
       name: formData.get("name") as string,
       venue: venueId,
       sport: formData.get("sport") as string,
@@ -1002,14 +1055,16 @@ const ManageSections = () => {
       capacity: parseInt(formData.get("capacity") as string),
       description: (formData.get("description") as string)?.trim() || undefined,
       minimumDuration: parseInt(formData.get("minimumDuration") as string),
-      images: (formData.get("images") as string)
-        ?.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean) || [],
-      rules: (formData.get("rules") as string)
-        ?.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean) || [],
+      images:
+        (formData.get("images") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
+      rules:
+        (formData.get("rules") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
       isActive: true,
       ownerBlockedTime: [],
       maintenanceTime: [],
@@ -1048,7 +1103,7 @@ const ManageSections = () => {
       return;
     }
 
-    const sectionData: Omit<Section, '_id'> = {
+    const sectionData: Omit<Section, "_id"> = {
       name: formData.get("name") as string,
       venue: venueId,
       sport: formData.get("sport") as string,
@@ -1057,14 +1112,16 @@ const ManageSections = () => {
       capacity: parseInt(formData.get("capacity") as string),
       description: (formData.get("description") as string)?.trim() || undefined,
       minimumDuration: parseInt(formData.get("minimumDuration") as string),
-      images: (formData.get("images") as string)
-        ?.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean) || [],
-      rules: (formData.get("rules") as string)
-        ?.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean) || [],
+      images:
+        (formData.get("images") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
+      rules:
+        (formData.get("rules") as string)
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
       isActive: true,
       ownerBlockedTime: selectedSection.ownerBlockedTime,
       maintenanceTime: selectedSection.maintenanceTime,
@@ -1088,10 +1145,13 @@ const ManageSections = () => {
   };
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!window.confirm("Are you sure you want to delete this section?")) return;
+    if (!window.confirm("Are you sure you want to delete this section?"))
+      return;
     try {
       await deleteSection(sectionId);
-      setSections((prevSections) => prevSections.filter((s) => s._id !== sectionId));
+      setSections((prevSections) =>
+        prevSections.filter((s) => s._id !== sectionId)
+      );
     } catch (err) {
       setError(`Failed to delete section: ${(err as Error).message}`);
       console.error(err);
@@ -1100,7 +1160,9 @@ const ManageSections = () => {
 
   const handleOpenSlotSettingsListModal = async (sectionId: string) => {
     try {
-      const section = sections.find((s) => s._id === sectionId) || await getSectionById(sectionId);
+      const section =
+        sections.find((s) => s._id === sectionId) ||
+        (await getSectionById(sectionId));
       if (!section) {
         throw new Error("Section not found");
       }
@@ -1127,7 +1189,8 @@ const ManageSections = () => {
   };
 
   const handleDeleteSlotSettings = async (slotSettingsId: string) => {
-    if (!window.confirm("Are you sure you want to delete this slot setting?")) return;
+    if (!window.confirm("Are you sure you want to delete this slot setting?"))
+      return;
     try {
       await deleteSlotSettings(slotSettingsId);
       const updatedList = await getSlotSettings(selectedSection!._id);
@@ -1159,10 +1222,11 @@ const ManageSections = () => {
 
     // Validate days
     const validDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-    const days = daysInput
-      ?.split(",")
-      .map((d) => d.trim().toUpperCase())
-      .filter((d) => validDays.includes(d)) || [];
+    const days =
+      daysInput
+        ?.split(",")
+        .map((d) => d.trim().toUpperCase())
+        .filter((d) => validDays.includes(d)) || [];
 
     if (days.length === 0) {
       setError("Please provide at least one valid day (e.g., MON, TUE)");
@@ -1171,9 +1235,14 @@ const ManageSections = () => {
     }
 
     // Validate duration
-    const duration = parseInt(durationInput) || selectedSection.minimumDuration || 60;
+    const duration =
+      parseInt(durationInput) || selectedSection.minimumDuration || 60;
     if (duration < (selectedSection.minimumDuration || 5) || duration > 480) {
-      setError(`Duration must be between ${selectedSection.minimumDuration || 5} and 480 minutes`);
+      setError(
+        `Duration must be between ${
+          selectedSection.minimumDuration || 5
+        } and 480 minutes`
+      );
       setIsSubmittingSlotSettings(false);
       return;
     }
@@ -1191,12 +1260,14 @@ const ManageSections = () => {
       (t) => t.startTime && t.endTime && t.startTime < t.endTime
     );
     if (validTimings.length === 0) {
-      setError("At least one valid timing slot (start time before end time) is required");
+      setError(
+        "At least one valid timing slot (start time before end time) is required"
+      );
       setIsSubmittingSlotSettings(false);
       return;
     }
 
-    const slotSettingsData: Omit<SlotSettings, '_id'> = {
+    const slotSettingsData: Omit<SlotSettings, "_id"> = {
       venue: venueId,
       section: selectedSection._id,
       startDate: (formData.get("startDate") as string)?.trim() || undefined,
@@ -1320,7 +1391,8 @@ const ManageSections = () => {
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-black mb-4">Sections</h2>
               <p className="text-gray-600">
-                Manage the different sections of your venue (e.g., courts, fields, pools)
+                Manage the different sections of your venue (e.g., courts,
+                fields, pools)
               </p>
             </div>
 
@@ -1347,7 +1419,9 @@ const ManageSections = () => {
                   <SectionCard
                     key={section._id}
                     section={section}
-                    onManageSlots={() => handleOpenSlotSettingsListModal(section._id)}
+                    onManageSlots={() =>
+                      handleOpenSlotSettingsListModal(section._id)
+                    }
                     onEdit={() => {
                       setSelectedSection(section);
                       setShowEditModal(true);

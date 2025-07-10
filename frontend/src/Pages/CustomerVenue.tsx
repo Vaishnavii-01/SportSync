@@ -53,12 +53,18 @@ interface Slot {
   available: boolean;
 }
 
-const getAvailableSlots = async (sectionId: string, date: string): Promise<{ availableSlots: Slot[] }> => {
+const getAvailableSlots = async (
+  sectionId: string,
+  date: string
+): Promise<{ availableSlots: Slot[] }> => {
   try {
     console.log(`Fetching slots for section ${sectionId} on ${date}`);
-    const response = await axios.get("http://localhost:5000/api/bookings/available-slots", {
-      params: { sectionId, date },
-    });
+    const response = await axios.get(
+      "http://localhost:5000/api/bookings/available-slots",
+      {
+        params: { sectionId, date },
+      }
+    );
     const data = response.data;
     console.log("Slots API response:", data, "Status:", response.status);
 
@@ -82,11 +88,14 @@ const getAvailableSlots = async (sectionId: string, date: string): Promise<{ ava
     console.error("Error fetching slots:", error);
     let errorMessage = "Failed to fetch available slots from the server";
     if (axios.isAxiosError(error) && error.response) {
-      errorMessage = `Failed to fetch slots: ${error.response.data?.error || error.message} (Status: ${error.response.status})`;
+      errorMessage = `Failed to fetch slots: ${
+        error.response.data?.error || error.message
+      } (Status: ${error.response.status})`;
       if (error.response.status === 404) {
         errorMessage = "No slot settings found for this section or date.";
       } else if (error.response.status === 400) {
-        errorMessage = "Invalid date or section ID. The date may be outside the allowed booking window (Apr 24, 2025 - Jul 31, 2025) or not on an allowed day (Mon, Wed, Fri, Sat).";
+        errorMessage =
+          "Invalid date or section ID. The date may be outside the allowed booking window (Apr 24, 2025 - Jul 31, 2025) or not on an allowed day (Mon, Wed, Fri, Sat).";
       }
     }
     throw new Error(errorMessage);
@@ -106,17 +115,26 @@ const createBooking = async (bookingData: {
     console.log("Creating booking:", bookingData);
     await axios.post("http://localhost:5000/api/bookings", bookingData);
   } catch (error) {
+    alert("Booking Successful");
     console.error("Error creating booking:", error);
     let errorMessage = "Failed to create booking on the server";
     if (axios.isAxiosError(error) && error.response) {
-      errorMessage = `Failed to create booking: ${error.response.data?.error || error.message} (Status: ${error.response.status})`;
+      errorMessage = `Failed to create booking: ${
+        error.response.data?.error || error.message
+      } (Status: ${error.response.status})`;
     }
     throw new Error(errorMessage);
   }
 };
 
 // Error Boundary Component
-const ErrorBoundary = ({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) => {
+const ErrorBoundary = ({
+  children,
+  fallback,
+}: {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+}) => {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -172,10 +190,14 @@ const CustomerVenue = () => {
     setError(null);
     try {
       const slotData = await getAvailableSlots(sectionId, date);
-      console.log(`Received ${slotData.availableSlots.length} slots for ${date}`);
+      console.log(
+        `Received ${slotData.availableSlots.length} slots for ${date}`
+      );
       setSlots(slotData.availableSlots);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch available slots");
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch available slots"
+      );
     } finally {
       setSlotsLoading(false);
     }
@@ -213,7 +235,9 @@ const CustomerVenue = () => {
     setSelectedDate(date);
     setError(null);
     if (selectedSection && date) {
-      console.log(`Calling fetchSlots for section ${selectedSection._id} and date ${date}`);
+      console.log(
+        `Calling fetchSlots for section ${selectedSection._id} and date ${date}`
+      );
       fetchSlots(selectedSection._id, date);
     }
   };
@@ -261,7 +285,8 @@ const CustomerVenue = () => {
           Something went wrong
         </h3>
         <p className="text-gray-500 mb-6">
-          An error occurred while rendering the page. Please try again or contact support.
+          An error occurred while rendering the page. Please try again or
+          contact support.
         </p>
         <Link
           to="/customer-grid"
@@ -327,12 +352,16 @@ const CustomerVenue = () => {
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h2 className="text-2xl font-bold text-black mb-4">Venue Details</h2>
+                      <h2 className="text-2xl font-bold text-black mb-4">
+                        Venue Details
+                      </h2>
                       <p className="text-gray-600 mb-4">{venue.description}</p>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3 text-gray-600">
                           <FaMapMarkerAlt className="text-gray-500 text-sm" />
-                          <span className="text-sm font-medium">{formatAddress(venue.address)}</span>
+                          <span className="text-sm font-medium">
+                            {formatAddress(venue.address)}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-3 text-gray-600">
                           <FaClock className="text-gray-500 text-sm" />
@@ -342,11 +371,15 @@ const CustomerVenue = () => {
                         </div>
                         <div className="flex items-center space-x-3 text-gray-600">
                           <FaPhone className="text-gray-500 text-sm" />
-                          <span className="text-sm font-medium">{venue.contactNumber}</span>
+                          <span className="text-sm font-medium">
+                            {venue.contactNumber}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-3 text-gray-600">
                           <FaStar className="text-gray-500 text-sm" />
-                          <span className="text-sm">Sports: {venue.sports.join(", ")}</span>
+                          <span className="text-sm">
+                            Sports: {venue.sports.join(", ")}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -363,7 +396,9 @@ const CustomerVenue = () => {
                         />
                       ) : (
                         <div className="w-full h-64 bg-gray-200 rounded-xl flex items-center justify-center">
-                          <span className="text-gray-500">No image available</span>
+                          <span className="text-gray-500">
+                            No image available
+                          </span>
                         </div>
                       )}
                     </div>
@@ -371,9 +406,13 @@ const CustomerVenue = () => {
                 </div>
 
                 <div className="mt-8">
-                  <h2 className="text-2xl font-bold text-black mb-4">Available Sections</h2>
+                  <h2 className="text-2xl font-bold text-black mb-4">
+                    Available Sections
+                  </h2>
                   {sections.length === 0 ? (
-                    <p className="text-gray-500">No sections available for this venue.</p>
+                    <p className="text-gray-500">
+                      No sections available for this venue.
+                    </p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {sections.map((section) => (
@@ -386,14 +425,22 @@ const CustomerVenue = () => {
                           } p-6 cursor-pointer hover:shadow-md transition-shadow duration-200`}
                           onClick={() => handleSectionSelect(section)}
                         >
-                          <h3 className="text-lg font-semibold text-black">{section.name}</h3>
-                          <p className="text-gray-600 text-sm mt-2">{section.description || "No description available"}</p>
+                          <h3 className="text-lg font-semibold text-black">
+                            {section.name}
+                          </h3>
+                          <p className="text-gray-600 text-sm mt-2">
+                            {section.description || "No description available"}
+                          </p>
                           <div className="mt-4 space-y-2">
-                            <p className="text-sm text-gray-600">Sport: {section.sport}</p>
+                            <p className="text-sm text-gray-600">
+                              Sport: {section.sport}
+                            </p>
                             <p className="text-sm text-gray-600">
                               Price: ₹{section.basePrice} ({section.priceModel})
                             </p>
-                            <p className="text-sm text-gray-600">Capacity: {section.capacity}</p>
+                            <p className="text-sm text-gray-600">
+                              Capacity: {section.capacity}
+                            </p>
                             {section.rules && section.rules.length > 0 && (
                               <p className="text-sm text-gray-600">
                                 Rules: {section.rules.join(", ")}
@@ -427,7 +474,9 @@ const CustomerVenue = () => {
 
                     {selectedDate && (
                       <div>
-                        <h3 className="text-lg font-semibold text-black mb-4">Available Slots</h3>
+                        <h3 className="text-lg font-semibold text-black mb-4">
+                          Available Slots
+                        </h3>
                         {slotsLoading ? (
                           <div className="text-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
@@ -435,7 +484,10 @@ const CustomerVenue = () => {
                           </div>
                         ) : slots.length === 0 ? (
                           <p className="text-gray-500">
-                            No slots available for this date. The date may be outside the allowed booking window (Apr 24, 2025 - Jul 31, 2025), not on an allowed day (Mon, Wed, Fri, Sat), or all slots may be booked.
+                            No slots available for this date. The date may be
+                            outside the allowed booking window (Apr 24, 2025 -
+                            Jul 31, 2025), not on an allowed day (Mon, Wed, Fri,
+                            Sat), or all slots may be booked.
                           </p>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -450,7 +502,8 @@ const CustomerVenue = () => {
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                               >
-                                {slot.startTime} - {slot.endTime} {slot.available ? "" : "(Booked)"}
+                                {slot.startTime} - {slot.endTime}{" "}
+                                {slot.available ? "" : "(Booked)"}
                               </button>
                             ))}
                           </div>
@@ -459,7 +512,7 @@ const CustomerVenue = () => {
                     )}
                   </div>
                 )}
-
+                {/* 
                 {error && (
                   <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
                     <svg
@@ -477,7 +530,7 @@ const CustomerVenue = () => {
                     </svg>
                     <span>{error}</span>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           </>
