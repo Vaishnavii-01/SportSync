@@ -1,3 +1,4 @@
+
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 // Main section interface
@@ -9,6 +10,7 @@ export interface ISection extends Document {
   description: string;
   images: string[];
   rules: string[];
+  basePrice: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +45,11 @@ const sectionSchema: Schema<ISection> = new Schema(
     },
     images: [String],
     rules: [String],
+    basePrice: {
+      type: Number,
+      required: [true, 'A section must have a base price'],
+      min: [0, 'Base price cannot be negative'],
+    },
     isActive: {
       type: Boolean,
       default: true,
