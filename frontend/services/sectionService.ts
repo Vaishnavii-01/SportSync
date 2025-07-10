@@ -92,22 +92,88 @@ export const deleteSection = async (sectionId: string): Promise<void> => {
   }
 };
 
-export const createOrUpdateSlotSettings = async (
+export const createSlotSettings = async (
   settingsData: Omit<SlotSettings, '_id'>
 ): Promise<SlotSettings> => {
   try {
-    const response = await axios.post(SLOT_SETTINGS_URL, settingsData);
+    // Validate input data
+    if (!settingsData.venue || !settingsData.section) {
+      throw new Error('Venue and section IDs are required');
+    }
+    if (!settingsData.days.length) {
+      throw new Error('At least one valid day is required');
+    }
+    if (!settingsData.timings.length) {
+      throw new Error('At least one timing slot is required');
+    }
+
+    const response = await axios.post(SLOT_SETTINGS_URL, {
+      venueId: settingsData.venue,
+      sectionId: settingsData.section,
+      startDate: settingsData.startDate,
+      endDate: settingsData.endDate,
+      days: settingsData.days,
+      timings: settingsData.timings,
+      duration: settingsData.duration,
+      bookingAllowed: settingsData.bookingAllowed,
+      priceModel: settingsData.priceModel,
+      basePrice: settingsData.basePrice,
+    });
     return response.data.slotSettings;
   } catch (error: any) {
-    console.error('Error creating/updating slot settings:', error);
-    throw new Error(error.response?.data?.error || 'Failed to manage slot settings');
+    console.error('Error creating slot settings:', error);
+    throw new Error(error.response?.data?.error || 'Failed to create slot settings');
   }
 };
 
-export const getSlotSettings = async (sectionId: string): Promise<SlotSettings | null> => {
+export const updateSlotSettings = async (
+  slotSettingsId: string,
+  settingsData: Omit<SlotSettings, '_id'>
+): Promise<SlotSettings> => {
+  try {
+    // Validate input data
+    if (!settingsData.venue || !settingsData.section) {
+      throw new Error('Venue and section IDs are required');
+    }
+    if (!settingsData.days.length) {
+      throw new Error('At least one valid day is required');
+    }
+    if (!settingsData.timings.length) {
+      throw new Error('At least one timing slot is required');
+    }
+
+    const response = await axios.put(`${SLOT_SETTINGS_URL}/${slotSettingsId}`, {
+      venueId: settingsData.venue,
+      sectionId: settingsData.section,
+      startDate: settingsData.startDate,
+      endDate: settingsData.endDate,
+      days: settingsData.days,
+      timings: settingsData.timings,
+      duration: settingsData.duration,
+      bookingAllowed: settingsData.bookingAllowed,
+      priceModel: settingsData.priceModel,
+      basePrice: settingsData.basePrice,
+    });
+    return response.data.slotSettings;
+  } catch (error: any) {
+    console.error('Error updating slot settings:', error);
+    throw new Error(error.response?.data?.error || 'Failed to update slot settings');
+  }
+};
+
+export const deleteSlotSettings = async (slotSettingsId: string): Promise<void> => {
+  try {
+    await axios.delete(`${SLOT_SETTINGS_URL}/${slotSettingsId}`);
+  } catch (error: any) {
+    console.error('Error deleting slot settings:', error);
+    throw new Error(error.response?.data?.error || 'Failed to delete slot settings');
+  }
+};
+
+export const getSlotSettings = async (sectionId: string): Promise<SlotSettings[]> => {
   try {
     const response = await axios.get(`${SLOT_SETTINGS_URL}/section/${sectionId}`);
-    return response.data.slotSettings[0] || null;
+    return response.data.slotSettings || [];
   } catch (error: any) {
     console.error('Error fetching slot settings:', error);
     throw new Error(error.response?.data?.error || 'Failed to fetch slot settings');
