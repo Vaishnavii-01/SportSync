@@ -10,6 +10,7 @@ import CustomerSettings from "./Pages/CustomerSettings";
 import CustomerDashboard from "./Pages/CustomerDashboard";
 import ContactPage from "./Pages/ContactPage";
 import ExplorePublicGrid from "./Pages/ExplorePublicGrid";
+import ManageSections from "./Pages/ManageSections";
 import "../index.css";
 
 const App = () => {
@@ -20,7 +21,8 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signin" element={<SignUp />} />
         <Route path="/venue/dashboard" element={<VenueDashboard />} />
-        <Route path="/venue/manage" element={<ManageVenues />} />
+        <Route path="/venues" element={<ManageVenues />} />
+        <Route path="/venues/:venueId/sections" element={<ManageSections />} />
         <Route path="/customer/search" element={<CustomerGrid />} />
         <Route path="/customer/venue/:id" element={<CustomerVenue />} />
         <Route path="/customer/settings/:id" element={<CustomerSettings />} />

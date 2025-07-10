@@ -33,7 +33,7 @@ interface Venue {
   openingTime: string;
   closingTime: string;
   isActive: boolean;
-  rating: number;
+  rating?: number;
   imageUrl?: string;
 }
 
