@@ -13,7 +13,9 @@ export const createSection = async (req: Request, res: Response) => {
       capacity,
       description,
       images,
-      rules
+      rules,
+      basePrice,
+      priceModel
     } = req.body;
 
     // Validate that venue exists
@@ -30,7 +32,9 @@ export const createSection = async (req: Request, res: Response) => {
       capacity,
       description,
       images,
-      rules
+      rules,
+      basePrice,
+      priceModel
     });
 
     await newSection.save();
@@ -101,10 +105,31 @@ export const getSectionById = async (req: Request, res: Response) => {
 export const updateSection = async (req: Request, res: Response) => {
   try {
     const { sectionId } = req.params;
+    const {
+      name,
+      sport,
+      capacity,
+      description,
+      images,
+      rules,
+      basePrice,
+      priceModel,
+      isActive
+    } = req.body;
 
     const updatedSection = await Section.findByIdAndUpdate(
       sectionId,
-      req.body,
+      {
+        name,
+        sport,
+        capacity,
+        description,
+        images,
+        rules,
+        basePrice,
+        priceModel,
+        isActive
+      },
       { new: true, runValidators: true }
     );
 

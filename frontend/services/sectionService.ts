@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:5000/api/sections';
-const SLOT_SETTINGS_URL = 'http://localhost:5000/api/slot-settings';
-const BOOKINGS_URL = 'http://localhost:5000/api/bookings';
+const API_BASE_URL = "http://localhost:5000/api/sections";
+const SLOT_SETTINGS_URL = "http://localhost:5000/api/slot-settings";
 
-export interface SectionData {
+export interface Section {
+  _id: string;
   name: string;
   venue: string;
   sport: string;
@@ -12,131 +12,194 @@ export interface SectionData {
   basePrice: number;
   capacity: number;
   description?: string;
-  images?: string[];
-  rules?: string[];
+  minimumDuration: number;
+  ownerBlockedTime: string[];
+  maintenanceTime: string[];
+  images: string[];
+  rules: string[];
+  isActive: boolean;
 }
 
-export interface SlotSettingsData {
-  venueId: string;
-  sectionId: string;
+export interface TimingSlot {
+  startTime: string;
+  endTime: string;
+}
+
+export interface SlotSettings {
+  _id: string;
+  venue: string;
+  section: string;
   startDate?: string;
   endDate?: string;
   days: string[];
-  timings: { startTime: string; endTime: string }[];
+  timings: TimingSlot[];
   duration: number;
   bookingAllowed: number;
+  priceModel: string;
+  basePrice: number;
+  isActive: boolean;
 }
 
-export interface BookingData {
-  userId: string;
-  venueId: string;
-  sectionId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  slotId: string;
-}
-
-// Create a new section
-export const createSection = async (sectionData: SectionData) => {
+export const createSection = async (
+  sectionData: Omit<Section, "_id">
+): Promise<Section> => {
   try {
     const response = await axios.post(API_BASE_URL, sectionData);
-    return response.data;
+    return response.data.section;
   } catch (error: any) {
-    console.error('Error creating section:', error);
-    throw new Error(error.response?.data?.error || 'Failed to create section');
+    console.error("Error creating section:", error);
+    throw new Error(error.response?.data?.error || "Failed to create section");
   }
 };
 
-// Get all sections for a venue
-export const getVenueSections = async (venueId: string, sport?: string) => {
+export const getVenueSections = async (venueId: string): Promise<Section[]> => {
   try {
-    const url = sport
-      ? `${API_BASE_URL}/venue/${venueId}?sport=${encodeURIComponent(sport)}`
-      : `${API_BASE_URL}/venue/${venueId}`;
-    const response = await axios.get(url);
+    const response = await axios.get(`${API_BASE_URL}/venue/${venueId}`);
     return response.data.sections;
   } catch (error: any) {
-    console.error('Error fetching venue sections:', error);
-    throw new Error(error.response?.data?.error || 'Failed to fetch venue sections');
+    console.error("Error fetching venue sections:", error);
+    throw new Error(
+      error.response?.data?.error || "Failed to fetch venue sections"
+    );
   }
 };
 
-// Get section by ID
-export const getSectionById = async (sectionId: string) => {
+export const getSectionById = async (sectionId: string): Promise<Section> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/${sectionId}`);
     return response.data.section;
   } catch (error: any) {
-    console.error('Error fetching section:', error);
-    throw new Error(error.response?.data?.error || 'Failed to fetch section');
+    console.error("Error fetching section:", error);
+    throw new Error(error.response?.data?.error || "Failed to fetch section");
   }
 };
 
-// Update a section
-export const updateSection = async (sectionId: string, sectionData: Partial<SectionData>) => {
+export const updateSection = async (
+  sectionId: string,
+  sectionData: Partial<Section>
+): Promise<Section> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/${sectionId}`, sectionData);
-    return response.data;
+    const response = await axios.put(
+      `${API_BASE_URL}/${sectionId}`,
+      sectionData
+    );
+    return response.data.section;
   } catch (error: any) {
-    console.error('Error updating section:', error);
-    throw new Error(error.response?.data?.error || 'Failed to update section');
+    console.error("Error updating section:", error);
+    throw new Error(error.response?.data?.error || "Failed to update section");
   }
 };
 
-// Delete a section
-export const deleteSection = async (sectionId: string) => {
+export const deleteSection = async (sectionId: string): Promise<void> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/${sectionId}`);
-    return response.data;
+    await axios.delete(`${API_BASE_URL}/${sectionId}`);
   } catch (error: any) {
-    console.error('Error deleting section:', error);
-    throw new Error(error.response?.data?.error || 'Failed to delete section');
+    console.error("Error deleting section:", error);
+    throw new Error(error.response?.data?.error || "Failed to delete section");
   }
 };
 
-// Create or update slot settings
-export const createOrUpdateSlotSettings = async (slotSettingsData: SlotSettingsData) => {
+export const createSlotSettings = async (
+  settingsData: Omit<SlotSettings, "_id">
+): Promise<SlotSettings> => {
   try {
-    const response = await axios.post(SLOT_SETTINGS_URL, slotSettingsData);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error creating/updating slot settings:', error);
-    throw new Error(error.response?.data?.error || 'Failed to manage slot settings');
-  }
-};
+    // Validate input data
+    if (!settingsData.venue || !settingsData.section) {
+      throw new Error("Venue and section IDs are required");
+    }
+    if (!settingsData.days.length) {
+      throw new Error("At least one valid day is required");
+    }
+    if (!settingsData.timings.length) {
+      throw new Error("At least one timing slot is required");
+    }
 
-// Get slot settings for a section
-export const getSlotSettings = async (sectionId: string) => {
-  try {
-    const response = await axios.get(`${SLOT_SETTINGS_URL}/section/${sectionId}`);
+    const response = await axios.post(SLOT_SETTINGS_URL, {
+      venueId: settingsData.venue,
+      sectionId: settingsData.section,
+      startDate: settingsData.startDate,
+      endDate: settingsData.endDate,
+      days: settingsData.days,
+      timings: settingsData.timings,
+      duration: settingsData.duration,
+      bookingAllowed: settingsData.bookingAllowed,
+      priceModel: settingsData.priceModel,
+      basePrice: settingsData.basePrice,
+    });
     return response.data.slotSettings;
   } catch (error: any) {
-    console.error('Error fetching slot settings:', error);
-    throw new Error(error.response?.data?.error || 'Failed to fetch slot settings');
+    console.error("Error creating slot settings:", error);
+    throw new Error(
+      error.response?.data?.error || "Failed to create slot settings"
+    );
   }
 };
 
-// Get available slots for a section on a specific date
-export const getAvailableSlots = async (sectionId: string, date: string) => {
+export const updateSlotSettings = async (
+  slotSettingsId: string,
+  settingsData: Omit<SlotSettings, "_id">
+): Promise<SlotSettings> => {
+  try {
+    // Validate input data
+    if (!settingsData.venue || !settingsData.section) {
+      throw new Error("Venue and section IDs are required");
+    }
+    if (!settingsData.days.length) {
+      throw new Error("At least one valid day is required");
+    }
+    if (!settingsData.timings.length) {
+      throw new Error("At least one timing slot is required");
+    }
+
+    const response = await axios.put(`${SLOT_SETTINGS_URL}/${slotSettingsId}`, {
+      venueId: settingsData.venue,
+      sectionId: settingsData.section,
+      startDate: settingsData.startDate,
+      endDate: settingsData.endDate,
+      days: settingsData.days,
+      timings: settingsData.timings,
+      duration: settingsData.duration,
+      bookingAllowed: settingsData.bookingAllowed,
+      priceModel: settingsData.priceModel,
+      basePrice: settingsData.basePrice,
+    });
+    return response.data.slotSettings;
+  } catch (error: any) {
+    console.error("Error updating slot settings:", error);
+    throw new Error(
+      error.response?.data?.error || "Failed to update slot settings"
+    );
+  }
+};
+
+export const deleteSlotSettings = async (
+  slotSettingsId: string
+): Promise<void> => {
+  try {
+    await axios.delete(`${SLOT_SETTINGS_URL}/${slotSettingsId}`);
+  } catch (error: any) {
+    console.error("Error deleting slot settings:", error);
+    throw new Error(
+      error.response?.data?.error || "Failed to delete slot settings"
+    );
+  }
+};
+
+export const getSlotSettings = async (
+  sectionId: string
+): Promise<SlotSettings[]> => {
   try {
     const response = await axios.get(
-      `${SLOT_SETTINGS_URL}/available-slots?sectionId=${sectionId}&date=${date}`
+      `${SLOT_SETTINGS_URL}/section/${sectionId}`
     );
-    return response.data;
+    return response.data.slotSettings || [];
   } catch (error: any) {
-    console.error('Error fetching available slots:', error);
-    throw new Error(error.response?.data?.error || 'Failed to fetch available slots');
-  }
-};
-
-// Create a booking
-export const createBooking = async (bookingData: BookingData) => {
-  try {
-    const response = await axios.post(BOOKINGS_URL, bookingData);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error creating booking:', error);
-    throw new Error(error.response?.data?.error || 'Failed to create booking');
+    if (error.response?.status === 404) {
+      return []; // Return empty array if no slot settings are found
+    }
+    console.error("Error fetching slot settings:", error);
+    throw new Error(
+      error.response?.data?.error || "Failed to fetch slot settings"
+    );
   }
 };

@@ -160,18 +160,14 @@ export const deleteSlotSettings = async (req: Request, res: Response) => {
   try {
     const { slotSettingsId } = req.params;
 
-    const slotSettings = await SlotSettings.findByIdAndUpdate(
-      slotSettingsId,
-      { isActive: false },
-      { new: true }
-    );
+    const slotSettings = await SlotSettings.findByIdAndDelete(slotSettingsId);
 
     if (!slotSettings) {
       return res.status(404).json({ error: 'Slot settings not found' });
     }
 
     res.status(200).json({
-      message: 'Slot settings deactivated successfully'
+      message: 'Slot settings deleted successfully'
     });
 
   } catch (error: any) {
