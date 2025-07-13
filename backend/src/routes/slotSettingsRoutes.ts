@@ -1,32 +1,31 @@
-// src/routes/slotSettings.ts
 import express from 'express';
-import {
-  createSlotSettings,
-  updateSlotSettings,
-  getSlotSettings,
-  getVenueSlotSettings,
-  deleteSlotSettings,
-  generateAvailableSlots
-} from '../controllers/slotSettingsController';
+   import {
+     createSlotSettings,
+     updateSlotSettings,
+     getSlotSettings,
+     getVenueSlotSettings,
+     deleteSlotSettings,
+     generateAvailableSlots
+   } from '../controllers/slotSettingsController';
 
-const router = express.Router();
+   const router = express.Router();
 
-// Create new slot settings
-router.post('/', createSlotSettings);
+   // Generate available slots for a specific date and section
+   router.get('/available-slots', generateAvailableSlots);
 
-// Update existing slot settings by ID
-router.put('/:slotSettingsId', updateSlotSettings);
+   // Create new slot settings
+   router.post('/', createSlotSettings);
 
-// Get slot settings for a specific section
-router.get('/section/:sectionId', getSlotSettings);
+   // Update existing slot settings by ID
+   router.put('/:slotSettingsId', updateSlotSettings);
 
-// Get all slot settings for a venue
-router.get('/venue/:venueId', getVenueSlotSettings);
+   // Get slot settings for a specific section
+   router.get('/:sectionId', getSlotSettings);
 
-// Deactivate (soft delete) slot settings by ID
-router.delete('/:slotSettingsId', deleteSlotSettings);
+   // Get all slot settings for a venue
+   router.get('/venue/:venueId', getVenueSlotSettings);
 
-// Generate available slots for a specific date and section
-router.get('/available-slots', generateAvailableSlots);
+   // Delete slot settings by ID
+   router.delete('/:slotSettingsId', deleteSlotSettings);
 
-export default router;
+   export default router;
