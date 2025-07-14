@@ -11,14 +11,6 @@ const normalizeDate = (date: Date): Date => {
   return normalized;
 };
 
-// Helper function to check if a date is within a date range
-const isDateInRange = (date: Date, startDate: Date, endDate: Date): boolean => {
-  const normalizedDate = normalizeDate(date);
-  const normalizedStart = normalizeDate(startDate);
-  const normalizedEnd = normalizeDate(endDate);
-  return normalizedDate >= normalizedStart && normalizedDate <= normalizedEnd;
-};
-
 // Helper function to check if a slot overlaps with a blocked time
 const isSlotBlocked = (slotStartMinutes: number, slotEndMinutes: number, blockStartTime: string, blockEndTime: string): boolean => {
   const [blockStartHour, blockStartMin] = blockStartTime.split(':').map(Number);
@@ -91,16 +83,6 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'This day is blocked' });
     }
 
-    if (slotSettings.blockedDates.some(d => normalizeDate(d).toISOString() === bookingDate.toISOString())) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'This date is blocked' });
-    }
-
-    if (slotSettings.blockedDateRanges.some(range => isDateInRange(bookingDate, range.startDate, range.endDate))) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'This date is within a blocked date range' });
-    }
-
     // Validate time is within operating hours
     const [opStartHour, opStartMin] = slotSettings.startTime.split(':').map(Number);
     const [opEndHour, opEndMin] = slotSettings.endTime.split(':').map(Number);
@@ -115,26 +97,10 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Booking time outside operating hours' });
     }
 
-    // Check blocked times with precedence: customDateBlockedTimes > dayBlockedTimes > blockedTimes
-    let isBlocked = false;
-    const customDateBlocks = slotSettings.customDateBlockedTimes
-      .filter(cdb => normalizeDate(cdb.date).toISOString() === bookingDate.toISOString());
-    if (customDateBlocks.length > 0) {
-      isBlocked = customDateBlocks.some(cdb => cdb.blockedTimes.some(block => 
-        isSlotBlocked(bookingStartMinutes, bookingEndMinutes, block.startTime, block.endTime)
-      ));
-    } else {
-      const dayBlocks = slotSettings.dayBlockedTimes.filter(db => db.day === bookingDay);
-      if (dayBlocks.length > 0) {
-        isBlocked = dayBlocks.some(db => db.blockedTimes.some(block => 
-          isSlotBlocked(bookingStartMinutes, bookingEndMinutes, block.startTime, block.endTime)
-        ));
-      } else {
-        isBlocked = slotSettings.blockedTimes.some(block => 
-          isSlotBlocked(bookingStartMinutes, bookingEndMinutes, block.startTime, block.endTime)
-        );
-      }
-    }
+    // Check blocked times
+    const isBlocked = slotSettings.blockedTimes.some(block => 
+      isSlotBlocked(bookingStartMinutes, bookingEndMinutes, block.startTime, block.endTime)
+    );
 
     if (isBlocked) {
       await session.abortTransaction();
@@ -155,7 +121,7 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Slot already booked' });
     }
 
-    // Calculate duration and price with precedence: customDatePrices > customDateRangePrices > customPrices > basePrice
+    // Calculate duration and price with precedence: customDatePrices > customPrices > basePrice
     const duration = (bookingEndTime.getTime() - bookingStartTime.getTime()) / (1000 * 60);
     let price = slotSettings.basePrice || section.basePrice;
     const customDatePrice = slotSettings.customDatePrices.find(cdp => 
@@ -164,16 +130,9 @@ export const createBooking = async (req: Request, res: Response) => {
     if (customDatePrice) {
       price = customDatePrice.price;
     } else {
-      const customDateRangePrice = slotSettings.customDateRangePrices.find(cdrp => 
-        isDateInRange(bookingDate, cdrp.startDate, cdrp.endDate)
-      );
-      if (customDateRangePrice) {
-        price = customDateRangePrice.price;
-      } else {
-        const customPrice = slotSettings.customPrices.find(cp => cp.day === bookingDay);
-        if (customPrice) {
-          price = customPrice.price;
-        }
+      const customPrice = slotSettings.customPrices.find(cp => cp.day === bookingDay);
+      if (customPrice) {
+        price = customPrice.price;
       }
     }
 
@@ -260,14 +219,6 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
       return res.status(400).json({ error: 'This day is blocked' });
     }
 
-    if (slotSettings.blockedDates.some(d => normalizeDate(d).toISOString() === targetDate.toISOString())) {
-      return res.status(400).json({ error: 'This date is blocked' });
-    }
-
-    if (slotSettings.blockedDateRanges.some(range => isDateInRange(targetDate, range.startDate, range.endDate))) {
-      return res.status(400).json({ error: 'This date is within a blocked date range' });
-    }
-
     // Generate all possible slots
     const allSlots = [];
     const section = slotSettings.section as any;
@@ -289,32 +240,12 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
       const slotEndMinutes = slotEndTime.getHours() * 60 + slotEndTime.getMinutes();
 
       // Check if slot is blocked
-      let isBlocked = false;
-
-      // 1. Check customDateBlockedTimes
-      const customDateBlocks = slotSettings.customDateBlockedTimes
-        .filter(cdb => normalizeDate(cdb.date).toISOString() === targetDate.toISOString());
-      if (customDateBlocks.length > 0) {
-        isBlocked = customDateBlocks.some(cdb => cdb.blockedTimes.some(block => 
-          isSlotBlocked(currentMinutes, slotEndMinutes, block.startTime, block.endTime)
-        ));
-      } else {
-        // 2. Check dayBlockedTimes
-        const dayBlocks = slotSettings.dayBlockedTimes.filter(db => db.day === dayOfWeek);
-        if (dayBlocks.length > 0) {
-          isBlocked = dayBlocks.some(db => db.blockedTimes.some(block => 
-            isSlotBlocked(currentMinutes, slotEndMinutes, block.startTime, block.endTime)
-          ));
-        } else {
-          // 3. Fall back to general blockedTimes
-          isBlocked = slotSettings.blockedTimes.some(block => 
-            isSlotBlocked(currentMinutes, slotEndMinutes, block.startTime, block.endTime)
-          );
-        }
-      }
+      const isBlocked = slotSettings.blockedTimes.some(block => 
+        isSlotBlocked(currentMinutes, slotEndMinutes, block.startTime, block.endTime)
+      );
 
       if (!isBlocked) {
-        // Calculate price with precedence: customDatePrices > customDateRangePrices > customPrices > basePrice
+        // Calculate price with precedence: customDatePrices > customPrices > basePrice
         let price = slotSettings.basePrice || section.basePrice;
         const customDatePrice = slotSettings.customDatePrices.find(cdp => 
           normalizeDate(cdp.date).toISOString() === targetDate.toISOString()
@@ -322,16 +253,9 @@ export const getAvailableSlotsWithBookings = async (req: Request, res: Response)
         if (customDatePrice) {
           price = customDatePrice.price;
         } else {
-          const customDateRangePrice = slotSettings.customDateRangePrices.find(cdrp => 
-            isDateInRange(targetDate, cdrp.startDate, cdrp.endDate)
-          );
-          if (customDateRangePrice) {
-            price = customDateRangePrice.price;
-          } else {
-            const customPrice = slotSettings.customPrices.find(cp => cp.day === dayOfWeek);
-            if (customPrice) {
-              price = customPrice.price;
-            }
+          const customPrice = slotSettings.customPrices.find(cp => cp.day === dayOfWeek);
+          if (customPrice) {
+            price = customPrice.price;
           }
         }
 
