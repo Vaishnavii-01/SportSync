@@ -9,6 +9,7 @@ import {
   FaSave,
   FaTrash,
   FaEdit,
+  FaBan,
 } from "react-icons/fa";
 import {
   createSection,
@@ -49,6 +50,7 @@ interface SlotSettings {
   _id: string;
   venue: string;
   section: string;
+  name: string;
   startDate?: string;
   endDate?: string;
   days: string[];
@@ -57,7 +59,20 @@ interface SlotSettings {
   bookingAllowed: number;
   priceModel: string;
   basePrice: number;
+  customDayPrices: { day: string; price: number }[];
   isActive: boolean;
+}
+
+interface BlockedSlot {
+  _id?: string;
+  name: string;
+  venue: string;
+  section: string;
+  startDate: string;
+  endDate: string;
+  days: string[];
+  timings: TimingSlot[];
+  reason: string;
 }
 
 interface Venue {
@@ -73,11 +88,13 @@ const SectionCard = ({
   onManageSlots,
   onEdit,
   onDelete,
+  onBlockedSlots,
 }: {
   section: Section;
   onManageSlots: (sectionId: string) => void;
   onEdit: (section: Section) => void;
   onDelete: (sectionId: string) => void;
+  onBlockedSlots: (sectionId: string) => void;
 }) => {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
@@ -111,6 +128,13 @@ const SectionCard = ({
               className="p-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
             >
               <FaTrash />
+            </button>
+            <button
+              onClick={() => onBlockedSlots(section._id)}
+              className="px-4 py-2 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors flex items-center space-x-2"
+            >
+              <FaBan className="text-sm" />
+              <span>Blocked Slots</span>
             </button>
             <button
               onClick={() => onManageSlots(section._id)}
@@ -439,7 +463,8 @@ const SlotSettingsFormModal = ({
   slotSettings: SlotSettings | null;
   onSubmit: (
     e: React.FormEvent<HTMLFormElement>,
-    timings: TimingSlot[]
+    timings: TimingSlot[],
+    customDayPrices: { day: string; price: number }[]
   ) => void;
   onClose: () => void;
   isSubmitting: boolean;
@@ -451,7 +476,15 @@ const SlotSettingsFormModal = ({
   const [duration, setDuration] = useState(
     slotSettings?.duration || section.minimumDuration || 60
   );
-  const [generatedSlots, setGeneratedSlots] = useState<string[]>([]);
+  const [name, setName] = useState(slotSettings?.name || "");
+  const [price, setPrice] = useState(
+    slotSettings?.basePrice || section.basePrice || 0
+  );
+  const [selectedDays, setSelectedDays] = useState<string[]>(
+    slotSettings?.days || []
+  );
+
+  const daysOfWeek = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
   const addTimingSlot = () => {
     setTimings([...timings, { startTime: "", endTime: "" }]);
@@ -471,43 +504,15 @@ const SlotSettingsFormModal = ({
     const newTimings = [...timings];
     newTimings[index][field] = value;
     setTimings(newTimings);
-    generateSlots(newTimings, duration);
   };
 
-  const generateSlots = useCallback(
-    (timings: TimingSlot[], duration: number) => {
-      const slots: string[] = [];
-      timings.forEach(({ startTime, endTime }) => {
-        if (!startTime || !endTime) return;
-        const [startHour, startMin] = startTime.split(":").map(Number);
-        const [endHour, endMin] = endTime.split(":").map(Number);
-
-        const start = new Date();
-        start.setHours(startHour, startMin, 0, 0);
-
-        const end = new Date();
-        end.setHours(endHour, endMin, 0, 0);
-
-        let current = new Date(start);
-        while (current < end) {
-          const slotEnd = new Date(current.getTime() + duration * 60000);
-          if (slotEnd > end) break;
-          slots.push(
-            `${current.toTimeString().slice(0, 5)}-${slotEnd
-              .toTimeString()
-              .slice(0, 5)}`
-          );
-          current = slotEnd;
-        }
-      });
-      setGeneratedSlots(slots);
-    },
-    []
-  );
-
-  useEffect(() => {
-    generateSlots(timings, duration);
-  }, [duration, timings, generateSlots]);
+  const toggleDay = (day: string) => {
+    if (selectedDays.includes(day)) {
+      setSelectedDays(selectedDays.filter((d) => d !== day));
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -549,7 +554,7 @@ const SlotSettingsFormModal = ({
         </div>
         <div className="overflow-y-auto max-h-[calc(90vh-240px)]">
           <form
-            onSubmit={(e) => onSubmit(e, timings)}
+            onSubmit={(e) => onSubmit(e, timings, [])}
             className="px-8 py-8 space-y-10"
           >
             <div className="space-y-6">
@@ -565,6 +570,20 @@ const SlotSettingsFormModal = ({
                     Define availability and slot duration
                   </p>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                  placeholder="Enter slot settings name"
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -594,19 +613,28 @@ const SlotSettingsFormModal = ({
                 <label className="block text-sm font-semibold text-gray-700">
                   Days <span className="text-red-500">*</span>
                 </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {daysOfWeek.map((day) => (
+                    <button
+                      type="button"
+                      key={day}
+                      onClick={() => toggleDay(day)}
+                      className={`px-3 py-2 rounded-xl text-center text-sm font-medium ${
+                        selectedDays.includes(day)
+                          ? "bg-black text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
                 <input
-                  type="text"
+                  type="hidden"
                   name="days"
+                  value={selectedDays.join(",")}
                   required
-                  pattern="(MON|TUE|WED|THU|FRI|SAT|SUN)(,(MON|TUE|WED|THU|FRI|SAT|SUN))*"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                  placeholder="MON,TUE,WED"
-                  defaultValue={slotSettings?.days.join(",") || ""}
                 />
-                <p className="text-xs text-gray-500">
-                  Separate days with commas (e.g., MON,TUE,WED). Use uppercase:
-                  MON, TUE, WED, THU, FRI, SAT, SUN
-                </p>
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -668,9 +696,7 @@ const SlotSettingsFormModal = ({
                   max="480"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="60"
-                  defaultValue={
-                    slotSettings?.duration || section.minimumDuration || 60
-                  }
+                  value={duration}
                   onChange={(e) =>
                     setDuration(
                       parseInt(e.target.value) || section.minimumDuration || 60
@@ -684,24 +710,19 @@ const SlotSettingsFormModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Generated Slots (Preview)
+                  Price (₹) <span className="text-red-500">*</span>
                 </label>
-                <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100">
-                  {generatedSlots.length > 0 ? (
-                    generatedSlots.map((slot, index) => (
-                      <div key={index} className="text-sm text-gray-700">
-                        {slot}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      No slots generated yet
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">
-                  Slots are generated based on timing slots and duration
-                </p>
+                <input
+                  type="number"
+                  name="basePrice"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(parseFloat(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                  placeholder="Enter price"
+                />
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -720,36 +741,6 @@ const SlotSettingsFormModal = ({
                 />
                 <p className="text-xs text-gray-500">
                   Number of days in advance bookings are allowed (1-365)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Price Model
-                </label>
-                <input
-                  type="text"
-                  name="priceModel"
-                  readOnly
-                  value={section.priceModel}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500">
-                  Inherited from section settings
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Base Price
-                </label>
-                <input
-                  type="number"
-                  name="basePrice"
-                  readOnly
-                  value={section.basePrice}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500">
-                  Inherited from section settings
                 </p>
               </div>
             </div>
@@ -824,6 +815,330 @@ const SlotSettingsFormModal = ({
                       {slotSettings
                         ? "Update Slot Settings"
                         : "Create Slot Settings"}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BlockedSlotSettingsModal = ({
+  section,
+  onSubmit,
+  onClose,
+  isSubmitting,
+  error,
+}: {
+  section: Section;
+  onSubmit: (
+    e: React.FormEvent<HTMLFormElement>,
+    timings: TimingSlot[]
+  ) => void;
+  onClose: () => void;
+  isSubmitting: boolean;
+  error: string | null;
+}) => {
+  const [timings, setTimings] = useState<TimingSlot[]>([
+    { startTime: "", endTime: "" },
+  ]);
+  const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [days, setDays] = useState<string[]>([]);
+  const [reason, setReason] = useState("");
+
+  const daysOfWeek = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+  const addTimingSlot = () => {
+    setTimings([...timings, { startTime: "", endTime: "" }]);
+  };
+
+  const removeTimingSlot = (index: number) => {
+    if (timings.length > 1) {
+      setTimings(timings.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTimingSlot = (
+    index: number,
+    field: keyof TimingSlot,
+    value: string
+  ) => {
+    const newTimings = [...timings];
+    newTimings[index][field] = value;
+    setTimings(newTimings);
+  };
+
+  const toggleDay = (day: string) => {
+    if (days.includes(day)) {
+      setDays(days.filter((d) => d !== day));
+    } else {
+      setDays([...days, day]);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#FFFFF8] rounded-3xl max-w-4xl w-full max-h-[90vh] shadow-2xl border border-gray-300">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 rounded-t-3xl border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
+                <FaBan className="text-black text-sm" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-black">
+                  Blocked Slot Settings
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  Configure blocked time slots for {section.name}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-100"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="overflow-y-auto max-h-[calc(90vh-240px)]">
+          <form
+            onSubmit={(e) => onSubmit(e, timings)}
+            className="px-8 py-8 space-y-10"
+          >
+            <div className="space-y-6">
+              <div className="flex items-center space-x-3 pb-3 border-b border-gray-200">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <FaBan className="text-black text-sm" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-black">
+                    Blocked Time Slots
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Define unavailable time periods for this section
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                  placeholder="Enter reason for blocking slots"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    required
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    End Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    required
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Days <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {daysOfWeek.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={`px-3 py-2 rounded-xl text-center text-sm font-medium ${
+                        days.includes(day)
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="hidden"
+                  name="days"
+                  value={days.join(",")}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Blocked Time Slots <span className="text-red-500">*</span>
+                </label>
+                {timings.map((timing, index) => (
+                  <div key={index} className="flex items-center space-x-2 mb-2">
+                    <input
+                      type="time"
+                      required
+                      value={timing.startTime}
+                      onChange={(e) =>
+                        updateTimingSlot(index, "startTime", e.target.value)
+                      }
+                      className="w-1/2 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    />
+                    <input
+                      type="time"
+                      required
+                      value={timing.endTime}
+                      onChange={(e) =>
+                        updateTimingSlot(index, "endTime", e.target.value)
+                      }
+                      className="w-1/2 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    />
+                    {timings.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeTimingSlot(index)}
+                        className="p-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addTimingSlot}
+                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Add Time Slot
+                </button>
+                <p className="text-xs text-gray-500">
+                  Add multiple time ranges to block (e.g., 14:00-16:00,
+                  20:00-22:00)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="reason"
+                  required
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white resize-none"
+                  rows={3}
+                  placeholder="Explain why these slots are blocked"
+                />
+              </div>
+            </div>
+            <div className="bg-gray-50 -mx-8 px-8 py-6 border-t border-gray-200">
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
+                  <svg
+                    className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+              <div className="flex gap-4 justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  className={`px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 ${
+                    isSubmitting
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:bg-gray-100 hover:border-gray-400"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-6 py-3 bg-black text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform ${
+                    isSubmitting
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:-translate-y-0.5 hover:bg-gray-800"
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <FaSave className="mr-2" />
+                      Save Blocked Slots
                     </span>
                   )}
                 </button>
@@ -916,6 +1231,9 @@ const SlotSettingsListModal = ({
                   >
                     <div>
                       <p className="font-semibold text-black">
+                        {settings.name}
+                      </p>
+                      <p className="text-sm text-gray-600">
                         Days: {settings.days.join(", ")}
                       </p>
                       <p className="text-sm text-gray-600">
@@ -945,6 +1263,20 @@ const SlotSettingsListModal = ({
                       <p className="text-sm text-gray-600">
                         Status: {settings.isActive ? "Active" : "Inactive"}
                       </p>
+                      {settings.customDayPrices.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-gray-700">
+                            Custom Prices:
+                          </p>
+                          <ul className="text-sm text-gray-600">
+                            {settings.customDayPrices.map((price, idx) => (
+                              <li key={idx}>
+                                {price.day}: ₹{price.price}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                     <div className="flex space-x-2">
                       <button
@@ -995,12 +1327,16 @@ const ManageSections = () => {
     useState(false);
   const [showSlotSettingsFormModal, setShowSlotSettingsFormModal] =
     useState(false);
+  const [showBlockedSlotSettingsModal, setShowBlockedSlotSettingsModal] =
+    useState(false);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [selectedSlotSettings, setSelectedSlotSettings] =
     useState<SlotSettings | null>(null);
   const [slotSettingsList, setSlotSettingsList] = useState<SlotSettings[]>([]);
   const [isSubmittingSection, setIsSubmittingSection] = useState(false);
   const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] =
+    useState(false);
+  const [isSubmittingBlockedSlots, setIsSubmittingBlockedSlots] =
     useState(false);
 
   const fetchVenueAndSections = useCallback(async () => {
@@ -1203,7 +1539,8 @@ const ManageSections = () => {
 
   const handleAddOrUpdateSlotSettings = async (
     e: React.FormEvent<HTMLFormElement>,
-    timings: TimingSlot[]
+    timings: TimingSlot[],
+    customDayPrices: { day: string; price: number }[]
   ) => {
     e.preventDefault();
     setIsSubmittingSlotSettings(true);
@@ -1216,6 +1553,7 @@ const ManageSections = () => {
     }
 
     const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
     const daysInput = formData.get("days") as string;
     const durationInput = formData.get("duration") as string;
     const bookingAllowedInput = formData.get("bookingAllowed") as string;
@@ -1270,6 +1608,7 @@ const ManageSections = () => {
     const slotSettingsData: Omit<SlotSettings, "_id"> = {
       venue: venueId,
       section: selectedSection._id,
+      name,
       startDate: (formData.get("startDate") as string)?.trim() || undefined,
       endDate: (formData.get("endDate") as string)?.trim() || undefined,
       days,
@@ -1278,6 +1617,7 @@ const ManageSections = () => {
       bookingAllowed,
       priceModel: selectedSection.priceModel,
       basePrice: selectedSection.basePrice,
+      customDayPrices,
       isActive: true,
     };
 
@@ -1300,6 +1640,66 @@ const ManageSections = () => {
       console.error(err);
     } finally {
       setIsSubmittingSlotSettings(false);
+    }
+  };
+
+  const handleOpenBlockedSlotSettings = (sectionId: string) => {
+    const section = sections.find((s) => s._id === sectionId);
+    if (section) {
+      setSelectedSection(section);
+      setShowBlockedSlotSettingsModal(true);
+    }
+  };
+
+  const handleBlockedSlotSettingsSubmit = async (
+    e: React.FormEvent<HTMLFormElement>,
+    timings: TimingSlot[]
+  ) => {
+    e.preventDefault();
+    setIsSubmittingBlockedSlots(true);
+    setError(null);
+
+    if (!venueId || !selectedSection) {
+      setError("Venue ID or section is missing");
+      setIsSubmittingBlockedSlots(false);
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const startDate = formData.get("startDate") as string;
+    const endDate = formData.get("endDate") as string;
+    const days = (formData.get("days") as string).split(",");
+    const reason = formData.get("reason") as string;
+
+    if (!name || !startDate || !endDate || days.length === 0 || !reason) {
+      setError("All fields are required");
+      setIsSubmittingBlockedSlots(false);
+      return;
+    }
+
+    const blockedSlotData: BlockedSlot = {
+      name,
+      venue: venueId,
+      section: selectedSection._id,
+      startDate,
+      endDate,
+      days,
+      timings,
+      reason,
+    };
+
+    try {
+      // Here you would call your API service to save the blocked slots
+      console.log("Saving blocked slots:", blockedSlotData);
+      // Example: await saveBlockedSlots(blockedSlotData);
+      setShowBlockedSlotSettingsModal(false);
+      // Show success message or refresh data as needed
+    } catch (err) {
+      setError(`Failed to save blocked slots: ${(err as Error).message}`);
+      console.error(err);
+    } finally {
+      setIsSubmittingBlockedSlots(false);
     }
   };
 
@@ -1422,6 +1822,9 @@ const ManageSections = () => {
                     onManageSlots={() =>
                       handleOpenSlotSettingsListModal(section._id)
                     }
+                    onBlockedSlots={() =>
+                      handleOpenBlockedSlotSettings(section._id)
+                    }
                     onEdit={() => {
                       setSelectedSection(section);
                       setShowEditModal(true);
@@ -1483,6 +1886,18 @@ const ManageSections = () => {
               setSelectedSlotSettings(null);
             }}
             isSubmitting={isSubmittingSlotSettings}
+            error={error}
+          />
+        )}
+        {showBlockedSlotSettingsModal && selectedSection && (
+          <BlockedSlotSettingsModal
+            section={selectedSection}
+            onSubmit={handleBlockedSlotSettingsSubmit}
+            onClose={() => {
+              setShowBlockedSlotSettingsModal(false);
+              setSelectedSection(null);
+            }}
+            isSubmitting={isSubmittingBlockedSlots}
             error={error}
           />
         )}
