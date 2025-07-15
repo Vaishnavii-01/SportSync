@@ -4,6 +4,7 @@ import SlotSettings from '../models/slotSettings';
 import Section from '../models/section';
 import Venue from '../models/venue';
 import Booking from '../models/booking';
+import { isTimeBlocked } from './blockedSettingsController';
 
 // Helper function to normalize dates (ignore time component)
 const normalizeDate = (date: Date): Date => {
@@ -211,116 +212,127 @@ export const deleteSlotSettings = async (req: Request, res: Response) => {
   }
 };
 
+// Updated generateAvailableSlots function in slotSettingsController.ts
 export const generateAvailableSlots = async (req: Request, res: Response) => {
   try {
     const { sectionId, date } = req.query;
-
     if (!sectionId || !date) {
       return res.status(400).json({ error: 'Section ID and date are required' });
     }
 
-    // Fetch the most recent active slot settings
+    // Fetch slot settings
     const slotSettings = await SlotSettings.findOne({
       section: sectionId,
       isActive: true
     }).sort({ createdAt: -1 }).populate('section', 'name sport basePrice');
 
     if (!slotSettings) {
-      return res.status(404).json({ error: 'No active slot settings found for this section' });
-    }
-
-    // Validate startTime and endTime
-    if (!slotSettings.startTime || !slotSettings.endTime) {
-      return res.status(400).json({ error: 'Slot settings missing startTime or endTime' });
+      return res.status(404).json({ error: 'No active slot settings found' });
     }
 
     const targetDate = normalizeDate(new Date(date as string));
     const dayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][targetDate.getDay()];
 
-    // Validate date constraints
+    // Validate date range
     if (targetDate < normalizeDate(slotSettings.startDate) || targetDate > normalizeDate(slotSettings.endDate)) {
       return res.status(400).json({ error: 'Date outside valid range' });
     }
 
+    // Validate day of week
     if (!slotSettings.days.includes(dayOfWeek)) {
       return res.status(400).json({ error: 'No availability on this day' });
-    }
-
-    if (slotSettings.blockedDays.includes(dayOfWeek)) {
-      return res.status(400).json({ error: 'This day is blocked' });
     }
 
     // Check booking advance constraints
     const today = normalizeDate(new Date());
     const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays > slotSettings.bookingAllowed) {
-      return res.status(400).json({ error: 'Booking is not allowed this far in advance' });
+      return res.status(400).json({ error: 'Booking not allowed this far in advance' });
     }
     if (diffDays < 0) {
       return res.status(400).json({ error: 'Cannot book slots for past dates' });
     }
 
-    // Generate slots
+    // Generate slots for each time range
     const availableSlots = [];
     const section = slotSettings.section as any;
-    if (!section) {
-      return res.status(400).json({ error: 'Section data not populated' });
-    }
 
-    const [startHour, startMin] = slotSettings.startTime.split(':').map(Number);
-    const [endHour, endMin] = slotSettings.endTime.split(':').map(Number);
+    for (const timing of slotSettings.timings) {
+      const [startHour, startMin] = timing.startTime.split(':').map(Number);
+      const [endHour, endMin] = timing.endTime.split(':').map(Number);
 
-    const startTime = new Date(targetDate);
-    startTime.setHours(startHour, startMin, 0, 0);
-    const endTime = new Date(targetDate);
-    endTime.setHours(endHour, endMin, 0, 0);
+      const startTime = new Date(targetDate);
+      startTime.setHours(startHour, startMin, 0, 0);
+      const endTime = new Date(targetDate);
+      endTime.setHours(endHour, endMin, 0, 0);
 
-    let current = new Date(startTime);
+      let current = new Date(startTime);
 
-    while (current < endTime) {
-      const slotEndTime = new Date(current.getTime() + slotSettings.duration * 60000);
-      if (slotEndTime > endTime) break;
+      while (current < endTime) {
+        const slotEndTime = new Date(current.getTime() + slotSettings.duration * 60000);
+        if (slotEndTime > endTime) break;
 
-      const currentMinutes = current.getHours() * 60 + current.getMinutes();
-      const slotEndMinutes = slotEndTime.getHours() * 60 + slotEndTime.getMinutes();
+        const startTimeStr = current.toTimeString().slice(0, 5);
+        const endTimeStr = slotEndTime.toTimeString().slice(0, 5);
 
-      // Check if slot is blocked
-      const isBlocked = slotSettings.blockedTimes.some(block => 
-        isSlotBlocked(currentMinutes, slotEndMinutes, block.startTime, block.endTime)
-      );
-
-      if (!isBlocked) {
-        // Calculate price with precedence: customDatePrices > customPrices > basePrice
-        let price = slotSettings.basePrice || section.basePrice;
-        const customDatePrice = slotSettings.customDatePrices.find(cdp => 
-          normalizeDate(cdp.date).toISOString() === targetDate.toISOString()
+        // Check if this slot is blocked
+        const isBlocked = await isTimeBlocked(
+          slotSettings.venue.toString(),
+          sectionId as string,
+          targetDate,
+          startTimeStr,
+          endTimeStr
         );
-        if (customDatePrice) {
-          price = customDatePrice.price;
-        } else {
-          const customPrice = slotSettings.customPrices.find(cp => cp.day === dayOfWeek);
-          if (customPrice) {
-            price = customPrice.price;
+
+        if (!isBlocked) {
+          // Calculate price with precedence:
+          // 1. customDatePrice (specific date)
+          // 2. customDateRangePrice (date range)
+          // 3. customDayPrice (day of week)
+          // 4. base price
+          let price = slotSettings.price;
+
+          // Check custom date price
+          const customDatePrice = slotSettings.customDatePrice?.find(cdp => 
+            normalizeDate(cdp.date).getTime() === targetDate.getTime()
+          );
+          if (customDatePrice) {
+            price = customDatePrice.price;
+          } else {
+            // Check custom date range price
+            const customRangePrice = slotSettings.customDateRangePrice?.find(cdrp => 
+              targetDate >= normalizeDate(cdrp.startDate) && 
+              targetDate <= normalizeDate(cdrp.endDate)
+            );
+            if (customRangePrice) {
+              price = customRangePrice.price;
+            } else {
+              // Check custom day price
+              const customDayPrice = slotSettings.customDayPrice?.find(cdp => cdp.day === dayOfWeek);
+              if (customDayPrice) {
+                price = customDayPrice.price;
+              }
+            }
           }
+
+          availableSlots.push({
+            id: `${sectionId}-${current.getTime()}`,
+            sectionId,
+            sectionName: section.name,
+            sport: section.sport,
+            date: targetDate.toISOString().split('T')[0],
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            fullStartTime: new Date(current),
+            fullEndTime: new Date(slotEndTime),
+            duration: slotSettings.duration,
+            price: price,
+            isAvailable: true
+          });
         }
 
-        availableSlots.push({
-          id: `${sectionId}-${current.getTime()}`,
-          sectionId,
-          sectionName: section.name,
-          sport: section.sport,
-          date: targetDate.toISOString().split('T')[0],
-          startTime: current.toTimeString().slice(0, 5),
-          endTime: slotEndTime.toTimeString().slice(0, 5),
-          fullStartTime: new Date(current),
-          fullEndTime: new Date(slotEndTime),
-          duration: slotSettings.duration,
-          price: price * (slotSettings.duration / 60), // Per hour pricing
-          isAvailable: true
-        });
+        current = new Date(slotEndTime);
       }
-
-      current.setTime(current.getTime() + slotSettings.duration * 60000);
     }
 
     // Check existing bookings
@@ -360,17 +372,6 @@ export const generateAvailableSlots = async (req: Request, res: Response) => {
       date: targetDate.toISOString().split('T')[0],
       dayOfWeek,
       slots: slotsWithStatus,
-      slotSettings: {
-        duration: slotSettings.duration,
-        bookingAllowed: slotSettings.bookingAllowed,
-        basePrice: slotSettings.basePrice,
-        customPrices: slotSettings.customPrices,
-        customDatePrices: slotSettings.customDatePrices,
-        startTime: slotSettings.startTime,
-        endTime: slotSettings.endTime,
-        blockedTimes: slotSettings.blockedTimes,
-        blockedDays: slotSettings.blockedDays
-      },
       meta: {
         total: slotsWithStatus.length,
         available: slotsWithStatus.filter(s => s.isAvailable).length,
