@@ -3,29 +3,17 @@ import express from 'express';
      createSlotSettings,
      updateSlotSettings,
      getSlotSettings,
-     getVenueSlotSettings,
+      getAvailableSlots,
      deleteSlotSettings,
-     generateAvailableSlots
+     
    } from '../controllers/slotSettingsController';
 
    const router = express.Router();
 
-   // Generate available slots for a specific date and section
-   router.get('/available-slots', generateAvailableSlots);
-
-   // Create new slot settings
-   router.post('/', createSlotSettings);
-
-   // Update existing slot settings by ID
-   router.put('/:slotSettingsId', updateSlotSettings);
-
-   // Get slot settings for a specific section
-   router.get('/:sectionId', getSlotSettings);
-
-   // Get all slot settings for a venue
-   router.get('/venue/:venueId', getVenueSlotSettings);
-
-   // Delete slot settings by ID
-   router.delete('/:slotSettingsId', deleteSlotSettings);
-
+   // Slot Settings Routes
+router.post('/sections/:sectionId/slot-settings', createSlotSettings);
+router.get('/sections/:sectionId/slot-settings', getSlotSettings);
+router.get('/sections/:sectionId/available-slots', getAvailableSlots);
+router.put('/slot-settings/:slotSettingsId', updateSlotSettings);
+router.delete('/slot-settings/:slotSettingsId',  deleteSlotSettings);
    export default router;

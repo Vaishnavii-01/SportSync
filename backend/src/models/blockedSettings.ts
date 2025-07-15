@@ -1,4 +1,3 @@
-// src/models/blockedSettings.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IBlockedTime {
@@ -9,12 +8,14 @@ export interface IBlockedTime {
 export interface IBlockedSettings extends Document {
   venue: mongoose.Types.ObjectId;
   section: mongoose.Types.ObjectId;
+  name: string; // e.g., "Maintenance", "Private Event"
   startDate: Date;
   endDate: Date;
-  days: string[]; // ["MON", "TUE", etc.]
-  timings: IBlockedTime[];
-  isRecurring: boolean;
+  days: string[]; // ["MON", "TUE", etc.] - if empty, applies to all days
+  timings: IBlockedTime[]; // if empty, blocks entire day
+  isRecurring: boolean; // if true, repeats weekly within date range
   reason: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +44,10 @@ const blockedSettingsSchema = new Schema<IBlockedSettings>({
     ref: 'Section',
     required: true,
   },
+  name: {
+    type: String,
+    required: true,
+  },
   startDate: {
     type: Date,
     required: true,
@@ -66,17 +71,20 @@ const blockedSettingsSchema = new Schema<IBlockedSettings>({
   },
   reason: {
     type: String,
-    maxlength: 200,
+    maxlength: 500,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
   }
 }, { timestamps: true });
 
-// Indexes for efficient querying
-blockedSettingsSchema.index({ venue: 1, section: 1 });
+// Indexes
+blockedSettingsSchema.index({ venue: 1, section: 1, isActive: 1 });
 blockedSettingsSchema.index({ startDate: 1, endDate: 1 });
 
 // Validation middleware
 blockedSettingsSchema.pre<IBlockedSettings>('save', function(next) {
-  // Validate startDate is before endDate
   if (this.startDate >= this.endDate) {
     return next(new Error('Start date must be before end date'));
   }

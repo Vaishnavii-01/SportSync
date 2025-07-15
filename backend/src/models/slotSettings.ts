@@ -36,7 +36,7 @@ export interface ISlotSettings extends Document {
   customDateRangePrice?: ICustomDateRangePrice[]; // custom price for date ranges
   maxAdvanceBooking: number; // days in advance booking is allowed
   isActive: boolean;
-  priority: number; // higher number = higher priority when multiple settings overlap
+  priority?: number; // higher number = higher priority when multiple settings overlap
   createdAt: Date;
   updatedAt: Date;
 }

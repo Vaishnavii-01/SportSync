@@ -1,6 +1,5 @@
 // src/controllers/blockedSettingsController.ts
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import BlockedSettings from '../models/blockedSettings';
 import Venue from '../models/venue';
 import Section from '../models/section';
@@ -12,114 +11,161 @@ export const normalizeDate = (date: Date): Date => {
   return normalized;
 };
 
-export const createBlockedSetting = async (req: Request, res: Response) => {
+// Create blocked settings
+export const createBlockedSettings = async (req: Request, res: Response) => {
   try {
-    const { venueId, sectionId, startDate, endDate, days, timings, isRecurring, reason } = req.body;
+    const {
+      venueId,
+      sectionId,
+      name,
+      startDate,
+      endDate,
+      days,
+      timings,
+      isRecurring,
+      reason
+    } = req.body;
 
     // Validate venue and section
     const venue = await Venue.findById(venueId);
-    if (!venue) return res.status(404).json({ error: 'Venue not found' });
+    if (!venue) {
+      return res.status(404).json({ success: false, error: 'Venue not found' });
+    }
 
     const section = await Section.findOne({ _id: sectionId, venue: venueId });
-    if (!section) return res.status(404).json({ error: 'Section not found or not belonging to venue' });
+    if (!section) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Section not found or not belonging to venue' 
+      });
+    }
 
-    // Create blocked setting
-    const blockedSetting = new BlockedSettings({
+    const blockedSettings = new BlockedSettings({
       venue: venueId,
       section: sectionId,
+      name,
       startDate: normalizeDate(new Date(startDate)),
       endDate: normalizeDate(new Date(endDate)),
       days: days || [],
       timings: timings || [],
       isRecurring: isRecurring || false,
-      reason: reason || ''
+      reason: reason || '',
+      isActive: true
     });
 
-    await blockedSetting.save();
+    await blockedSettings.save();
 
     res.status(201).json({
-      message: 'Blocked setting created successfully',
-      blockedSetting
+      success: true,
+      message: 'Blocked settings created successfully',
+      data: blockedSettings
     });
   } catch (error: any) {
-    console.error('Create Blocked Setting Error:', error.message);
-    res.status(500).json({ error: 'Error creating blocked setting', details: error.message });
+    console.error('Create Blocked Settings Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error creating blocked settings', 
+      details: error.message 
+    });
   }
 };
 
+// Get blocked settings for a section
 export const getBlockedSettings = async (req: Request, res: Response) => {
   try {
-    const { venueId, sectionId } = req.params;
-    
-    const query: any = { venue: venueId };
-    if (sectionId) query.section = sectionId;
+    const { sectionId } = req.params;
 
-    const blockedSettings = await BlockedSettings.find(query)
-      .populate('venue', 'name')
-      .populate('section', 'name sport');
+    const blockedSettings = await BlockedSettings.find({
+      section: sectionId,
+      isActive: true
+    }).populate('venue', 'name')
+      .populate('section', 'name sport')
+      .sort({ createdAt: -1 });
 
-    res.status(200).json({ blockedSettings });
+    res.status(200).json({
+      success: true,
+      data: blockedSettings
+    });
   } catch (error: any) {
-    console.error('Get Blocked Settings Error:', error.message);
-    res.status(500).json({ error: 'Error fetching blocked settings', details: error.message });
+    console.error('Get Blocked Settings Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error fetching blocked settings', 
+      details: error.message 
+    });
   }
 };
 
-export const deleteBlockedSetting = async (req: Request, res: Response) => {
+// Update blocked settings
+export const updateBlockedSettings = async (req: Request, res: Response) => {
   try {
-    const { blockedSettingId } = req.params;
+    const { blockedSettingsId } = req.params;
+    const updateData = req.body;
 
-    const blockedSetting = await BlockedSettings.findByIdAndDelete(blockedSettingId);
-    if (!blockedSetting) return res.status(404).json({ error: 'Blocked setting not found' });
+    // If dates are being updated, normalize them
+    if (updateData.startDate) {
+      updateData.startDate = normalizeDate(new Date(updateData.startDate));
+    }
+    if (updateData.endDate) {
+      updateData.endDate = normalizeDate(new Date(updateData.endDate));
+    }
 
-    res.status(200).json({ message: 'Blocked setting deleted successfully' });
+    const blockedSettings = await BlockedSettings.findByIdAndUpdate(
+      blockedSettingsId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!blockedSettings) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Blocked settings not found' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Blocked settings updated successfully',
+      data: blockedSettings
+    });
   } catch (error: any) {
-    console.error('Delete Blocked Setting Error:', error.message);
-    res.status(500).json({ error: 'Error deleting blocked setting', details: error.message });
+    console.error('Update Blocked Settings Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error updating blocked settings', 
+      details: error.message 
+    });
   }
 };
 
-// Helper function to check if a time is blocked
-export const isTimeBlocked = async (venueId: string, sectionId: string, date: Date, startTime: string, endTime: string): Promise<boolean> => {
-  const targetDate = normalizeDate(date);
-  const dayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][targetDate.getDay()];
+// Delete (deactivate) blocked settings
+export const deleteBlockedSettings = async (req: Request, res: Response) => {
+  try {
+    const { blockedSettingsId } = req.params;
 
-  // Convert times to minutes for comparison
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
-  const slotStartMinutes = startHour * 60 + startMin;
-  const slotEndMinutes = endHour * 60 + endMin;
+    const blockedSettings = await BlockedSettings.findByIdAndUpdate(
+      blockedSettingsId,
+      { isActive: false },
+      { new: true }
+    );
 
-  // Find all relevant blocked settings
-  const blockedSettings = await BlockedSettings.find({
-    venue: venueId,
-    section: sectionId,
-    startDate: { $lte: targetDate },
-    endDate: { $gte: targetDate },
-    $or: [
-      { days: { $size: 0 } }, // Applies to all days
-      { days: dayOfWeek } // Applies to specific day
-    ]
-  });
-
-  // Check each blocked setting
-  for (const setting of blockedSettings) {
-    // If no specific timings, the whole day is blocked
-    if (setting.timings.length === 0) return true;
-
-    // Check each blocked time range
-    for (const timing of setting.timings) {
-      const [blockStartHour, blockStartMin] = timing.startTime.split(':').map(Number);
-      const [blockEndHour, blockEndMin] = timing.endTime.split(':').map(Number);
-      const blockStartMinutes = blockStartHour * 60 + blockStartMin;
-      const blockEndMinutes = blockEndHour * 60 + blockEndMin;
-
-      // Check for overlap
-      if (slotStartMinutes < blockEndMinutes && slotEndMinutes > blockStartMinutes) {
-        return true;
-      }
+    if (!blockedSettings) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Blocked settings not found' 
+      });
     }
-  }
 
-  return false;
+    res.status(200).json({
+      success: true,
+      message: 'Blocked settings deactivated successfully'
+    });
+  } catch (error: any) {
+    console.error('Delete Blocked Settings Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error deactivating blocked settings', 
+      details: error.message 
+    });
+  }
 };

@@ -1,20 +1,16 @@
 // src/routes/blockedSettingsRoutes.ts
 import express from 'express';
 import {
-  createBlockedSetting,
+  createBlockedSettings,
   getBlockedSettings,
-  deleteBlockedSetting
+  updateBlockedSettings,
+  deleteBlockedSettings
 } from '../controllers/blockedSettingsController';
-
 const router = express.Router();
 
-// Create a new blocked setting
-router.post('/', createBlockedSetting);
-
-// Get blocked settings for a venue/section
-router.get('/:venueId/:sectionId?', getBlockedSettings);
-
-// Delete a blocked setting
-router.delete('/:blockedSettingId', deleteBlockedSetting);
-
+// Blocked Settings Routes
+router.post('/sections/:sectionId/blocked-settings', createBlockedSettings);
+router.get('/sections/:sectionId/blocked-settings', getBlockedSettings);
+router.put('/blocked-settings/:blockedSettingsId', updateBlockedSettings);
+router.delete('/blocked-settings/:blockedSettingsId',  deleteBlockedSettings);
 export default router;
