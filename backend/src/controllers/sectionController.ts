@@ -14,8 +14,6 @@ export const createSection = async (req: Request, res: Response) => {
       description,
       images,
       rules,
-      basePrice,
-      priceModel
     } = req.body;
 
     // Validate that venue exists
@@ -33,8 +31,6 @@ export const createSection = async (req: Request, res: Response) => {
       description,
       images,
       rules,
-      basePrice,
-      priceModel
     });
 
     await newSection.save();
@@ -112,8 +108,6 @@ export const updateSection = async (req: Request, res: Response) => {
       description,
       images,
       rules,
-      basePrice,
-      priceModel,
       isActive
     } = req.body;
 
@@ -126,8 +120,6 @@ export const updateSection = async (req: Request, res: Response) => {
         description,
         images,
         rules,
-        basePrice,
-        priceModel,
         isActive
       },
       { new: true, runValidators: true }

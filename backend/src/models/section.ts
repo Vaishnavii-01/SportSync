@@ -9,8 +9,6 @@ export interface ISection extends Document {
   description: string;
   images: string[];
   rules: string[];
-  basePrice: number;
-  priceModel: 'perHour' | 'perSlot' | 'perSession';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -45,19 +43,6 @@ const sectionSchema: Schema<ISection> = new Schema(
     },
     images: [String],
     rules: [String],
-    basePrice: {
-      type: Number,
-      required: [true, 'A section must have a base price'],
-      min: [0, 'Base price cannot be negative'],
-    },
-    priceModel: {
-      type: String,
-      required: [true, 'A section must have a price model'],
-      enum: {
-        values: ['perHour', 'perSlot', 'perSession'],
-        message: 'Price model must be one of: perHour, perSlot, perSession',
-      },
-    },
     isActive: {
       type: Boolean,
       default: true,
