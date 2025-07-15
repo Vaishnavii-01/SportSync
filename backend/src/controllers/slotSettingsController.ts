@@ -1,109 +1,108 @@
-// src/controllers/slotSettingsController.ts
 import { Request, Response } from 'express';
-import SlotSettings from '../models/slotSettings';
-import BlockedSettings from '../models/blockedSettings';
+import mongoose, { FilterQuery } from 'mongoose';
+import SlotSettings, { ISlotSettings } from '../models/slotSettings';
 import Booking from '../models/booking';
 import Section from '../models/section';
+import BlockedSettings from '../models/blockedSettings';
 import Venue from '../models/venue';
 
 // Helper function to normalize dates
-const normalizeDate = (date: Date): Date => {
+const normalizeDate = (date: string | Date): Date => {
   const normalized = new Date(date);
-  normalized.setHours(0, 0, 0, 0);
+  if (isNaN(normalized.getTime())) {
+    throw new Error('Invalid date format');
+  }
+  normalized.setUTCHours(0, 0, 0, 0);
   return normalized;
 };
 
 // Helper function to get day of week
 const getDayOfWeek = (date: Date): string => {
-  return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][date.getDay()];
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  return days[date.getUTCDay()];
+};
+
+// Helper function to calculate price for a slot
+const calculateSlotPrice = (
+  slotSetting: ISlotSettings,
+  date: Date,
+  dayOfWeek: string
+): number => {
+  const dayPrice = slotSetting.customDayPrice?.find((cdp) => cdp.day === dayOfWeek);
+  return dayPrice ? dayPrice.price : slotSetting.price;
 };
 
 // Helper function to check if time overlaps with blocked times
 const isTimeBlocked = async (
-  venueId: string, 
-  sectionId: string, 
-  date: Date, 
-  startTime: string, 
+  venueId: string,
+  sectionId: string,
+  date: Date,
+  startTime: string,
   endTime: string
-): Promise<boolean> => {
+): Promise<{ isBlocked: boolean; reason?: string }> => {
   const targetDate = normalizeDate(date);
   const dayOfWeek = getDayOfWeek(targetDate);
 
   const [startHour, startMin] = startTime.split(':').map(Number);
   const [endHour, endMin] = endTime.split(':').map(Number);
+  if (isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
+    throw new Error('Invalid time format');
+  }
   const slotStart = startHour * 60 + startMin;
   const slotEnd = endHour * 60 + endMin;
 
-  const blockedSettings = await BlockedSettings.find({
+  const query: FilterQuery<any> = {
     venue: venueId,
     section: sectionId,
     isActive: true,
-    startDate: { $lte: targetDate },
-    endDate: { $gte: targetDate },
-    $or: [
-      { days: { $size: 0 } }, // No specific days = all days
-      { days: dayOfWeek }
-    ]
-  });
+    $and: [
+      {
+        $or: [
+          { startDate: { $exists: false } },
+          { startDate: { $lte: targetDate } },
+        ],
+      },
+      {
+        $or: [
+          { endDate: { $exists: false } },
+          { endDate: { $gte: targetDate } },
+        ],
+      },
+      {
+        $or: [
+          { days: { $size: 0 } },
+          { days: dayOfWeek },
+        ],
+      },
+    ],
+  };
+
+  // Sort by createdAt descending to prioritize newer settings
+  const blockedSettings = await BlockedSettings.find(query).sort({ createdAt: -1 });
 
   for (const blocked of blockedSettings) {
-    // If no specific timings, entire day is blocked
-    if (blocked.timings.length === 0) {
-      return true;
+    if (!blocked.timings || blocked.timings.length === 0) {
+      return { isBlocked: true, reason: blocked.reason || 'Entire day blocked' }; // Entire day is blocked
     }
 
-    // Check each blocked time range
     for (const timing of blocked.timings) {
       const [blockStartHour, blockStartMin] = timing.startTime.split(':').map(Number);
       const [blockEndHour, blockEndMin] = timing.endTime.split(':').map(Number);
+      if (isNaN(blockStartHour) || isNaN(blockStartMin) || isNaN(blockEndHour) || isNaN(blockEndMin)) {
+        continue; // Skip invalid timings
+      }
       const blockStart = blockStartHour * 60 + blockStartMin;
       const blockEnd = blockEndHour * 60 + blockEndMin;
 
-      // Check for overlap
       if (slotStart < blockEnd && slotEnd > blockStart) {
-        return true;
+        return { isBlocked: true, reason: blocked.reason || 'Time slot blocked' }; // Slot overlaps with blocked time
       }
     }
+    // If a newer setting is found, stop checking older ones
+    break;
   }
 
-  return false;
-};
-
-// Helper function to calculate price for a slot
-const calculateSlotPrice = (
-  slotSetting: any,
-  date: Date,
-  dayOfWeek: string
-): number => {
-  const targetDate = normalizeDate(date);
-  
-  // Priority: Specific Date > Date Range > Day of Week > Base Price
-  
-  // Check specific date price
-  const specificDatePrice = slotSetting.customDatePrice?.find((cdp: any) => 
-    normalizeDate(cdp.date).getTime() === targetDate.getTime()
-  );
-  if (specificDatePrice) {
-    return specificDatePrice.price;
-  }
-
-  // Check date range price
-  const dateRangePrice = slotSetting.customDateRangePrice?.find((cdrp: any) => 
-    targetDate >= normalizeDate(cdrp.startDate) && 
-    targetDate <= normalizeDate(cdrp.endDate)
-  );
-  if (dateRangePrice) {
-    return dateRangePrice.price;
-  }
-
-  // Check day of week price
-  const dayPrice = slotSetting.customDayPrice?.find((cdp: any) => cdp.day === dayOfWeek);
-  if (dayPrice) {
-    return dayPrice.price;
-  }
-
-  // Return base price
-  return slotSetting.price;
+  return { isBlocked: false };
 };
 
 // Create slot settings
@@ -120,38 +119,58 @@ export const createSlotSettings = async (req: Request, res: Response) => {
       duration,
       price,
       customDayPrice,
-      customDatePrice,
-      customDateRangePrice,
       maxAdvanceBooking,
-      priority
     } = req.body;
 
-    // Validate venue and section
+    // Validate required fields
+    if (!venueId || !sectionId || !name || !timings || !duration || !price) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: venueId, sectionId, name, timings, duration, and price are required',
+      });
+    }
+
+    // Validate ObjectIds
+    if (!mongoose.isValidObjectId(venueId) || !mongoose.isValidObjectId(sectionId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid venueId or sectionId',
+      });
+    }
+
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      return res.status(404).json({ error: 'Venue not found' });
+      return res.status(404).json({ success: false, error: 'Venue not found' });
     }
 
     const section = await Section.findOne({ _id: sectionId, venue: venueId });
     if (!section) {
-      return res.status(404).json({ error: 'Section not found or not belonging to venue' });
+      return res.status(404).json({
+        success: false,
+        error: 'Section not found or not belonging to venue',
+      });
+    }
+
+    // Validate timings format
+    if (!Array.isArray(timings) || timings.some((t: any) => !t.startTime || !t.endTime)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid timings format',
+      });
     }
 
     const slotSettings = new SlotSettings({
       venue: venueId,
       section: sectionId,
       name,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      days,
+      startDate: startDate ? normalizeDate(startDate) : undefined,
+      endDate: endDate ? normalizeDate(endDate) : undefined,
+      days: days || [],
       timings,
       duration,
       price,
       customDayPrice: customDayPrice || [],
-      customDatePrice: customDatePrice || [],
-      customDateRangePrice: customDateRangePrice || [],
-      maxAdvanceBooking,
-      priority: priority || 1
+      maxAdvanceBooking: maxAdvanceBooking || 30,
     });
 
     await slotSettings.save();
@@ -159,14 +178,14 @@ export const createSlotSettings = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: 'Slot settings created successfully',
-      data: slotSettings
+      data: slotSettings,
     });
   } catch (error: any) {
     console.error('Create Slot Settings Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error creating slot settings', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error creating slot settings',
+      details: error.message,
     });
   }
 };
@@ -174,155 +193,245 @@ export const createSlotSettings = async (req: Request, res: Response) => {
 // Get available slots for a section on a specific date
 export const getAvailableSlots = async (req: Request, res: Response) => {
   try {
-    const { sectionId, date } = req.query;
+    const { sectionId } = req.params;
+    const { date } = req.query;
 
     if (!sectionId || !date) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Section ID and date are required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Section ID and date are required',
       });
     }
 
-    const targetDate = normalizeDate(new Date(date as string));
+    if (!mongoose.isValidObjectId(sectionId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid section ID',
+      });
+    }
+
+    let targetDate: Date;
+    try {
+      targetDate = normalizeDate(date as string);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format',
+      });
+    }
+
     const dayOfWeek = getDayOfWeek(targetDate);
     const today = normalizeDate(new Date());
 
-    // Get all active slot settings for this section that apply to the target date
-    const slotSettings = await SlotSettings.find({
-      section: sectionId,
-      isActive: true,
-      startDate: { $lte: targetDate },
-      endDate: { $gte: targetDate },
-      days: dayOfWeek
-    }).sort({ priority: -1 }); // Higher priority first
-
-    if (slotSettings.length === 0) {
-      return res.status(404).json({
+    if (targetDate < today) {
+      return res.status(400).json({
         success: false,
-        error: 'No slot settings found for this section and date'
+        error: 'Date cannot be in the past',
       });
     }
 
-    const availableSlots = [];
-    const section = await Section.findById(sectionId).populate('venue', 'name');
+    const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    for (const setting of slotSettings) {
-      // Check advance booking limit
-      const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays > setting.maxAdvanceBooking) {
-        continue; // Skip this setting
+    const query: FilterQuery<ISlotSettings> = {
+      section: sectionId,
+      isActive: true,
+      days: dayOfWeek,
+      $and: [
+        {
+          $or: [
+            { startDate: { $exists: false } },
+            { startDate: { $lte: targetDate } },
+          ],
+        },
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: { $gte: targetDate } },
+          ],
+        },
+        { maxAdvanceBooking: { $gte: diffDays } },
+      ],
+    };
+
+    // Sort by createdAt descending to prioritize newer settings
+    const slotSettings = await SlotSettings.find(query).sort({ createdAt: -1 });
+
+    if (slotSettings.length === 0) {
+      // Check if the date is beyond maxAdvanceBooking for any slot settings
+      const allSettings = await SlotSettings.find({
+        section: sectionId,
+        isActive: true,
+        days: dayOfWeek,
+        $and: [
+          {
+            $or: [
+              { startDate: { $exists: false } },
+              { startDate: { $lte: targetDate } },
+            ],
+          },
+          {
+            $or: [
+              { endDate: { $exists: false } },
+              { endDate: { $gte: targetDate } },
+            ],
+          },
+        ],
+      }).sort({ createdAt: -1 });
+
+      if (allSettings.length > 0) {
+        const earliestBookingDate = new Date(targetDate);
+        const maxAdvanceBookingDays = Math.max(...allSettings.map(s => s.maxAdvanceBooking));
+        earliestBookingDate.setDate(targetDate.getDate() - maxAdvanceBookingDays);
+        earliestBookingDate.setUTCHours(0, 0, 0, 0);
+        return res.status(400).json({
+          success: false,
+          error: `Bookings for ${targetDate.toISOString().split('T')[0]} will be available from ${earliestBookingDate.toISOString().split('T')[0]}`,
+        });
       }
 
-      // Generate slots for each timing range
-      for (const timing of setting.timings) {
-        const [startHour, startMin] = timing.startTime.split(':').map(Number);
-        const [endHour, endMin] = timing.endTime.split(':').map(Number);
+      return res.status(404).json({
+        success: false,
+        error: 'No slot settings found for this section and date',
+      });
+    }
 
-        let currentMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
+    const section = await Section.findById(sectionId).populate('venue', 'name');
+    if (!section) {
+      return res.status(404).json({
+        success: false,
+        error: 'Section not found',
+      });
+    }
 
-        while (currentMinutes + setting.duration <= endMinutes) {
-          const slotStartHour = Math.floor(currentMinutes / 60);
-          const slotStartMin = currentMinutes % 60;
-          const slotEndMinutes = currentMinutes + setting.duration;
-          const slotEndHour = Math.floor(slotEndMinutes / 60);
-          const slotEndMin = slotEndMinutes % 60;
+    const availableSlots: any[] = [];
+    let blockedReason: string | undefined;
 
-          const startTimeStr = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMin.toString().padStart(2, '0')}`;
-          const endTimeStr = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMin.toString().padStart(2, '0')}`;
+    // Use the most recent slot setting
+    const setting = slotSettings[0]; // Take the newest setting based on createdAt
+    for (const timing of setting.timings) {
+      const [startHour, startMin] = timing.startTime.split(':').map(Number);
+      const [endHour, endMin] = timing.endTime.split(':').map(Number);
+      if (isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
+        continue; // Skip invalid timings
+      }
+      let currentMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
 
-          // Check if slot is blocked
-          const isBlocked = await isTimeBlocked(
-            setting.venue.toString(),
-            sectionId as string,
-            targetDate,
-            startTimeStr,
-            endTimeStr
-          );
+      while (currentMinutes + setting.duration <= endMinutes) {
+        const slotStartHour = Math.floor(currentMinutes / 60);
+        const slotStartMin = currentMinutes % 60;
+        const slotEndMinutes = currentMinutes + setting.duration;
+        const slotEndHour = Math.floor(slotEndMinutes / 60);
+        const slotEndMin = slotEndMinutes % 60;
 
-          if (!isBlocked) {
-            const price = calculateSlotPrice(setting, targetDate, dayOfWeek);
-            const slotId = `${sectionId}-${targetDate.toISOString().split('T')[0]}-${startTimeStr}`;
+        const startTimeStr = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMin.toString().padStart(2, '0')}`;
+        const endTimeStr = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMin.toString().padStart(2, '0')}`;
 
-            availableSlots.push({
-              slotId,
-              sectionId,
-              sectionName: section?.name,
-              venueName: (section as any)?.venue?.name,
-              date: targetDate.toISOString().split('T')[0],
-              startTime: startTimeStr,
-              endTime: endTimeStr,
-              duration: setting.duration,
-              price,
-              settingName: setting.name,
-              isAvailable: true
-            });
-          }
+        const { isBlocked, reason } = await isTimeBlocked(
+          setting.venue.toString(),
+          sectionId,
+          targetDate,
+          startTimeStr,
+          endTimeStr
+        );
 
-          currentMinutes += setting.duration;
+        if (!isBlocked) {
+          const price = calculateSlotPrice(setting, targetDate, dayOfWeek);
+          const slotId = `${sectionId}-${targetDate.toISOString().split('T')[0]}-${startTimeStr}`;
+
+          availableSlots.push({
+            slotId,
+            sectionId,
+            sectionName: section.name,
+            venueName: (section as any).venue.name,
+            date: targetDate.toISOString().split('T')[0],
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            duration: setting.duration,
+            price,
+            settingName: setting.name,
+            isActive: setting.isActive,
+            isAvailable: true,
+          });
+        } else if (reason && !blockedReason) {
+          blockedReason = reason; // Store the first reason encountered for blocked slots
         }
+
+        currentMinutes += setting.duration;
       }
     }
 
-    // Check existing bookings
     const bookings = await Booking.find({
       section: sectionId,
       date: targetDate,
-      status: { $ne: 'cancelled' }
+      status: { $ne: 'cancelled' },
     });
 
-    const bookedSlots = new Set();
-    bookings.forEach(booking => {
+    const bookedSlots = new Set<string>();
+    bookings.forEach((booking) => {
       const startTime = booking.startTime.toTimeString().slice(0, 5);
       const slotId = `${sectionId}-${targetDate.toISOString().split('T')[0]}-${startTime}`;
       bookedSlots.add(slotId);
     });
 
-    // Filter out booked slots
-    const finalSlots = availableSlots.filter(slot => !bookedSlots.has(slot.slotId));
+    const finalSlots = availableSlots.filter((slot) => !bookedSlots.has(slot.slotId));
 
-    res.status(200).json({
+    // Prepare response
+    const responseData: any = {
       success: true,
       data: {
         sectionId,
         date: targetDate.toISOString().split('T')[0],
         dayOfWeek,
         totalSlots: finalSlots.length,
-        slots: finalSlots
-      }
-    });
+        slots: finalSlots,
+      },
+    };
+
+    if (finalSlots.length === 0 && blockedReason) {
+      responseData.data.blockedReason = blockedReason;
+    }
+
+    res.status(200).json(responseData);
   } catch (error: any) {
     console.error('Get Available Slots Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error fetching available slots', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error fetching available slots',
+      details: error.message,
     });
   }
 };
 
-// Get slot settings for a section
+// Get slot settings
 export const getSlotSettings = async (req: Request, res: Response) => {
   try {
     const { sectionId } = req.params;
 
+    if (!mongoose.isValidObjectId(sectionId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid section ID',
+      });
+    }
+
     const slotSettings = await SlotSettings.find({
       section: sectionId,
-      isActive: true
-    }).populate('venue', 'name')
-      .populate('section', 'name sport')
-      .sort({ priority: -1 });
+      isActive: true,
+    })
+      .populate('venue', 'name')
+      .populate('section', 'name sport');
 
     res.status(200).json({
       success: true,
-      data: slotSettings
+      data: slotSettings,
     });
   } catch (error: any) {
     console.error('Get Slot Settings Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error fetching slot settings', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error fetching slot settings',
+      details: error.message,
     });
   }
 };
@@ -333,6 +442,21 @@ export const updateSlotSettings = async (req: Request, res: Response) => {
     const { slotSettingsId } = req.params;
     const updateData = req.body;
 
+    if (!mongoose.isValidObjectId(slotSettingsId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid slot settings ID',
+      });
+    }
+
+    // Normalize dates in updateData if present
+    if (updateData.startDate) {
+      updateData.startDate = normalizeDate(updateData.startDate);
+    }
+    if (updateData.endDate) {
+      updateData.endDate = normalizeDate(updateData.endDate);
+    }
+
     const slotSettings = await SlotSettings.findByIdAndUpdate(
       slotSettingsId,
       updateData,
@@ -340,23 +464,23 @@ export const updateSlotSettings = async (req: Request, res: Response) => {
     );
 
     if (!slotSettings) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Slot settings not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Slot settings not found',
       });
     }
 
     res.status(200).json({
       success: true,
       message: 'Slot settings updated successfully',
-      data: slotSettings
+      data: slotSettings,
     });
   } catch (error: any) {
     console.error('Update Slot Settings Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error updating slot settings', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error updating slot settings',
+      details: error.message,
     });
   }
 };
@@ -366,6 +490,13 @@ export const deleteSlotSettings = async (req: Request, res: Response) => {
   try {
     const { slotSettingsId } = req.params;
 
+    if (!mongoose.isValidObjectId(slotSettingsId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid slot settings ID',
+      });
+    }
+
     const slotSettings = await SlotSettings.findByIdAndUpdate(
       slotSettingsId,
       { isActive: false },
@@ -373,22 +504,22 @@ export const deleteSlotSettings = async (req: Request, res: Response) => {
     );
 
     if (!slotSettings) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Slot settings not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Slot settings not found',
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Slot settings deleted successfully'
+      message: 'Slot settings deleted successfully',
     });
   } catch (error: any) {
     console.error('Delete Slot Settings Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error deleting slot settings', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error deleting slot settings',
+      details: error.message,
     });
   }
 };

@@ -1,4 +1,3 @@
-// src/controllers/bookingController.ts
 import { Request, Response } from 'express';
 import Booking from '../models/booking';
 import SlotSettings from '../models/slotSettings';
@@ -20,10 +19,10 @@ const getDayOfWeek = (date: Date): string => {
 
 // Helper function to check if time overlaps with blocked times
 const isTimeBlocked = async (
-  venueId: string, 
-  sectionId: string, 
-  date: Date, 
-  startTime: string, 
+  venueId: string,
+  sectionId: string,
+  date: Date,
+  startTime: string,
   endTime: string
 ): Promise<boolean> => {
   const targetDate = normalizeDate(date);
@@ -38,17 +37,19 @@ const isTimeBlocked = async (
     venue: venueId,
     section: sectionId,
     isActive: true,
-    startDate: { $lte: targetDate },
-    endDate: { $gte: targetDate },
     $or: [
-      { days: { $size: 0 } }, // No specific days = all days
-      { days: dayOfWeek }
-    ]
+      { startDate: { $exists: false } },
+      { startDate: { $lte: targetDate } },
+      { endDate: { $exists: false } },
+      { endDate: { $gte: targetDate } },
+      { days: { $size: 0 } },
+      { days: dayOfWeek },
+    ],
   });
 
   for (const blocked of blockedSettings) {
     // If no specific timings, entire day is blocked
-    if (blocked.timings.length === 0) {
+    if (!blocked.timings || blocked.timings.length === 0) {
       return true;
     }
 
@@ -76,25 +77,6 @@ const calculateSlotPrice = (
   dayOfWeek: string
 ): number => {
   const targetDate = normalizeDate(date);
-  
-  // Priority: Specific Date > Date Range > Day of Week > Base Price
-  
-  // Check specific date price
-  const specificDatePrice = slotSetting.customDatePrice?.find((cdp: any) => 
-    normalizeDate(cdp.date).getTime() === targetDate.getTime()
-  );
-  if (specificDatePrice) {
-    return specificDatePrice.price;
-  }
-
-  // Check date range price
-  const dateRangePrice = slotSetting.customDateRangePrice?.find((cdrp: any) => 
-    targetDate >= normalizeDate(cdrp.startDate) && 
-    targetDate <= normalizeDate(cdrp.endDate)
-  );
-  if (dateRangePrice) {
-    return dateRangePrice.price;
-  }
 
   // Check day of week price
   const dayPrice = slotSetting.customDayPrice?.find((cdp: any) => cdp.day === dayOfWeek);
@@ -106,15 +88,23 @@ const calculateSlotPrice = (
   return slotSetting.price;
 };
 
+// Helper to convert time string to Date object
+const timeStringToDate = (date: Date, timeString: string): Date => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const newDate = new Date(date);
+  newDate.setHours(hours, minutes, 0, 0);
+  return newDate;
+};
+
 // Get available slots for a section on a specific date
 export const getAvailableSlots = async (req: Request, res: Response) => {
   try {
     const { sectionId, date } = req.query;
 
     if (!sectionId || !date) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Section ID and date are required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Section ID and date are required',
       });
     }
 
@@ -126,15 +116,19 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
     const slotSettings = await SlotSettings.find({
       section: sectionId as string,
       isActive: true,
-      startDate: { $lte: targetDate },
-      endDate: { $gte: targetDate },
-      days: dayOfWeek
-    }).sort({ priority: -1 }); // Higher priority first
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: targetDate } },
+        { endDate: { $exists: false } },
+        { endDate: { $gte: targetDate } },
+      ],
+      days: dayOfWeek,
+    });
 
     if (slotSettings.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'No slot settings found for this section and date'
+        error: 'No slot settings found for this section and date',
       });
     }
 
@@ -190,7 +184,7 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
               duration: setting.duration,
               price,
               settingName: setting.name,
-              isAvailable: true
+              isAvailable: true,
             });
           }
 
@@ -203,18 +197,18 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
     const bookings = await Booking.find({
       section: sectionId,
       date: targetDate,
-      status: { $ne: 'cancelled' }
+      status: { $ne: 'cancelled' },
     });
 
     const bookedSlots = new Set();
-    bookings.forEach(booking => {
+    bookings.forEach((booking) => {
       const startTime = booking.startTime.toTimeString().slice(0, 5);
       const slotId = `${sectionId}-${targetDate.toISOString().split('T')[0]}-${startTime}`;
       bookedSlots.add(slotId);
     });
 
     // Filter out booked slots
-    const finalSlots = availableSlots.filter(slot => !bookedSlots.has(slot.slotId));
+    const finalSlots = availableSlots.filter((slot) => !bookedSlots.has(slot.slotId));
 
     res.status(200).json({
       success: true,
@@ -223,15 +217,15 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
         date: targetDate.toISOString().split('T')[0],
         dayOfWeek,
         totalSlots: finalSlots.length,
-        slots: finalSlots
-      }
+        slots: finalSlots,
+      },
     });
   } catch (error: any) {
     console.error('Get Available Slots Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error fetching available slots', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error fetching available slots',
+      details: error.message,
     });
   }
 };
@@ -247,7 +241,7 @@ export const createBooking = async (req: Request, res: Response) => {
     if (!sectionId || !date || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        error: 'Section ID, date, start time, and end time are required'
+        error: 'Section ID, date, start time, and end time are required',
       });
     }
 
@@ -258,7 +252,7 @@ export const createBooking = async (req: Request, res: Response) => {
     if (bookingDate < today) {
       return res.status(400).json({
         success: false,
-        error: 'Cannot book for past dates'
+        error: 'Cannot book for past dates',
       });
     }
 
@@ -267,23 +261,23 @@ export const createBooking = async (req: Request, res: Response) => {
     if (!section) {
       return res.status(404).json({
         success: false,
-        error: 'Section not found'
+        error: 'Section not found',
       });
     }
 
     // Check if the slot is available
     const slotId = `${sectionId}-${bookingDate.toISOString().split('T')[0]}-${startTime}`;
-    
+
     // Check existing bookings
     const existingBooking = await Booking.findOne({
       slotId,
-      status: { $ne: 'cancelled' }
+      status: { $ne: 'cancelled' },
     });
 
     if (existingBooking) {
       return res.status(409).json({
         success: false,
-        error: 'This slot is already booked'
+        error: 'This slot is already booked',
       });
     }
 
@@ -292,15 +286,19 @@ export const createBooking = async (req: Request, res: Response) => {
     const slotSettings = await SlotSettings.findOne({
       section: sectionId,
       isActive: true,
-      startDate: { $lte: bookingDate },
-      endDate: { $gte: bookingDate },
-      days: dayOfWeek
-    }).sort({ priority: -1 });
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: { $lte: bookingDate } },
+        { endDate: { $exists: false } },
+        { endDate: { $gte: bookingDate } },
+      ],
+      days: dayOfWeek,
+    });
 
     if (!slotSettings) {
       return res.status(400).json({
         success: false,
-        error: 'No available slot settings for this date and time'
+        error: 'No available slot settings for this date and time',
       });
     }
 
@@ -315,13 +313,13 @@ export const createBooking = async (req: Request, res: Response) => {
       date: bookingDate,
       startTime: timeStringToDate(bookingDate, startTime),
       endTime: timeStringToDate(bookingDate, endTime),
-      duration: (new Date(timeStringToDate(bookingDate, endTime)).getTime() - 
-                new Date(timeStringToDate(bookingDate, startTime)).getTime()) / (1000 * 60),
+      duration: (new Date(timeStringToDate(bookingDate, endTime)).getTime() -
+        new Date(timeStringToDate(bookingDate, startTime)).getTime()) / (1000 * 60),
       price,
-      status: 'confirmed', // or 'pending' if payment is required first
-      paymentStatus: 'completed', // or 'pending' based on your flow
+      status: 'confirmed',
+      paymentStatus: 'completed',
       notes,
-      slotId
+      slotId,
     });
 
     await booking.save();
@@ -329,30 +327,21 @@ export const createBooking = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      data: booking
+      data: booking,
     });
   } catch (error: any) {
     console.error('Create Booking Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error creating booking', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error creating booking',
+      details: error.message,
     });
   }
-};
-
-// Helper to convert time string to Date object
-const timeStringToDate = (date: Date, timeString: string): Date => {
-  const [hours, minutes] = timeString.split(':').map(Number);
-  const newDate = new Date(date);
-  newDate.setHours(hours, minutes, 0, 0);
-  return newDate;
 };
 
 // Get user's bookings (placeholder version without auth)
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
-    // For now, we'll just return all bookings since auth isn't set up
     const { status } = req.query;
 
     const query: any = {};
@@ -365,14 +354,14 @@ export const getUserBookings = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: bookings
+      data: bookings,
     });
   } catch (error: any) {
     console.error('Get Bookings Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error fetching bookings', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error fetching bookings',
+      details: error.message,
     });
   }
 };
@@ -391,21 +380,21 @@ export const cancelBooking = async (req: Request, res: Response) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        error: 'Booking not found'
+        error: 'Booking not found',
       });
     }
 
     res.status(200).json({
       success: true,
       message: 'Booking cancelled successfully',
-      data: booking
+      data: booking,
     });
   } catch (error: any) {
     console.error('Cancel Booking Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Error cancelling booking', 
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: 'Error cancelling booking',
+      details: error.message,
     });
   }
 };

@@ -1,4 +1,3 @@
-// src/routes/blockedSettingsRoutes.ts
 import express from 'express';
 import {
   createBlockedSettings,
@@ -12,5 +11,5 @@ const router = express.Router();
 router.post('/sections/:sectionId/blocked-settings', createBlockedSettings);
 router.get('/sections/:sectionId/blocked-settings', getBlockedSettings);
 router.put('/blocked-settings/:blockedSettingsId', updateBlockedSettings);
-router.delete('/blocked-settings/:blockedSettingsId',  deleteBlockedSettings);
+router.delete('/blocked-settings/:blockedSettingsId', deleteBlockedSettings);
 export default router;

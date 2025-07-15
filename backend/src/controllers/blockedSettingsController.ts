@@ -1,4 +1,3 @@
-// src/controllers/blockedSettingsController.ts
 import { Request, Response } from 'express';
 import BlockedSettings from '../models/blockedSettings';
 import Venue from '../models/venue';
@@ -22,7 +21,6 @@ export const createBlockedSettings = async (req: Request, res: Response) => {
       endDate,
       days,
       timings,
-      isRecurring,
       reason
     } = req.body;
 
@@ -44,11 +42,10 @@ export const createBlockedSettings = async (req: Request, res: Response) => {
       venue: venueId,
       section: sectionId,
       name,
-      startDate: normalizeDate(new Date(startDate)),
-      endDate: normalizeDate(new Date(endDate)),
+      startDate: startDate ? normalizeDate(new Date(startDate)) : undefined,
+      endDate: endDate ? normalizeDate(new Date(endDate)) : undefined,
       days: days || [],
       timings: timings || [],
-      isRecurring: isRecurring || false,
       reason: reason || '',
       isActive: true
     });
