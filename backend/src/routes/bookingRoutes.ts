@@ -1,28 +1,28 @@
-// src/routes/booking.ts
+// src/routes/bookingRoutes.ts
 import express from 'express';
 import {
+  getAvailableSlots,
   createBooking,
-  getAvailableSlotsWithBookings,
   getUserBookings,
   cancelBooking,
-  getVenueBookings
+  getBookingDetails
 } from '../controllers/bookingController';
 
 const router = express.Router();
 
+// Get available slots
+router.get('/slots', getAvailableSlots);
+
 // Create a new booking
 router.post('/', createBooking);
-
-// Get available slots with booking status
-router.get('/available-slots', getAvailableSlotsWithBookings);
 
 // Get user bookings
 router.get('/user/:userId', getUserBookings);
 
-// Cancel a booking
+// Cancel booking
 router.put('/cancel/:bookingId', cancelBooking);
 
-// Get venue bookings
-router.get('/venue/:venueId', getVenueBookings);
+// Get booking details
+router.get('/:bookingId', getBookingDetails);
 
 export default router;
