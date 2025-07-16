@@ -108,12 +108,6 @@ const SectionCard = ({
               <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
                 {section.sport}
               </span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                {section.priceModel}
-              </span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                Capacity: {section.capacity}
-              </span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -145,10 +139,6 @@ const SectionCard = ({
           </div>
         </div>
 
-        {section.description && (
-          <p className="text-gray-600 text-sm mb-4">{section.description}</p>
-        )}
-
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <div className="flex items-center space-x-2">
             <div
@@ -164,16 +154,13 @@ const SectionCard = ({
               {section.isActive ? "Active" : "Inactive"}
             </span>
           </div>
-          <div className="text-sm font-medium text-gray-700">
-            ₹{section.basePrice} /{" "}
-            {section.priceModel === "perHour" ? "hour" : "slot"}
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
+// SectionFormModal with Price Model, Base Price, and Minimum Duration removed
 const SectionFormModal = ({
   venue,
   section,
@@ -264,41 +251,7 @@ const SectionFormModal = ({
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Price Model <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="priceModel"
-                required
-                defaultValue={section?.priceModel || "perHour"}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-              >
-                <option value="perHour">Per Hour</option>
-                <option value="perSlot">Per Slot</option>
-                <option value="perSession">Per Session</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                Base Price (₹) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="basePrice"
-                required
-                min="0"
-                step="0.01"
-                defaultValue={section?.basePrice || ""}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                placeholder="Enter base price (e.g., 100.50)"
-              />
-              <p className="text-xs text-gray-500">
-                Enter a positive number for the base price (e.g., 100.50)
-              </p>
-            </div>
-          </div>
+
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
               Capacity <span className="text-red-500">*</span>
@@ -313,20 +266,7 @@ const SectionFormModal = ({
               placeholder="Enter capacity"
             />
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Minimum Duration (minutes) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="minimumDuration"
-              required
-              min="15"
-              defaultValue={section?.minimumDuration || 60}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-              placeholder="Enter minimum duration"
-            />
-          </div>
+
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
               Description
@@ -473,13 +413,8 @@ const SlotSettingsFormModal = ({
   const [timings, setTimings] = useState<TimingSlot[]>(
     slotSettings?.timings || [{ startTime: "", endTime: "" }]
   );
-  const [duration, setDuration] = useState(
-    slotSettings?.duration || section.minimumDuration || 60
-  );
+  const [duration, setDuration] = useState(slotSettings?.duration || 60);
   const [name, setName] = useState(slotSettings?.name || "");
-  const [price, setPrice] = useState(
-    slotSettings?.basePrice || section.basePrice || 0
-  );
   const [selectedDays, setSelectedDays] = useState<string[]>(
     slotSettings?.days || []
   );
@@ -692,37 +627,16 @@ const SlotSettingsFormModal = ({
                   type="number"
                   name="duration"
                   required
-                  min={section.minimumDuration || 5}
+                  min={5}
                   max="480"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                   placeholder="60"
                   value={duration}
-                  onChange={(e) =>
-                    setDuration(
-                      parseInt(e.target.value) || section.minimumDuration || 60
-                    )
-                  }
+                  onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
                 />
                 <p className="text-xs text-gray-500">
-                  Duration must be between {section.minimumDuration || 5} and
-                  480 minutes
+                  Duration must be between 5 and 480 minutes
                 </p>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">
-                  Price (₹) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="basePrice"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(parseFloat(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                  placeholder="Enter price"
-                />
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
@@ -1375,22 +1289,16 @@ const ManageSections = () => {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const basePrice = parseFloat(formData.get("basePrice") as string);
-    if (isNaN(basePrice) || basePrice < 0) {
-      setError("Base price must be a positive number");
-      setIsSubmittingSection(false);
-      return;
-    }
 
     const sectionData: Omit<Section, "_id"> = {
       name: formData.get("name") as string,
       venue: venueId,
       sport: formData.get("sport") as string,
-      priceModel: formData.get("priceModel") as string,
-      basePrice,
+      priceModel: "perHour", // Default value
+      basePrice: 0, // Default value
       capacity: parseInt(formData.get("capacity") as string),
       description: (formData.get("description") as string)?.trim() || undefined,
-      minimumDuration: parseInt(formData.get("minimumDuration") as string),
+      minimumDuration: 60, // Default value
       images:
         (formData.get("images") as string)
           ?.split(",")
@@ -1432,22 +1340,16 @@ const ManageSections = () => {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const basePrice = parseFloat(formData.get("basePrice") as string);
-    if (isNaN(basePrice) || basePrice < 0) {
-      setError("Base price must be a positive number");
-      setIsSubmittingSection(false);
-      return;
-    }
 
     const sectionData: Omit<Section, "_id"> = {
       name: formData.get("name") as string,
       venue: venueId,
       sport: formData.get("sport") as string,
-      priceModel: formData.get("priceModel") as string,
-      basePrice,
+      priceModel: selectedSection.priceModel, // Keep existing value
+      basePrice: selectedSection.basePrice, // Keep existing value
       capacity: parseInt(formData.get("capacity") as string),
       description: (formData.get("description") as string)?.trim() || undefined,
-      minimumDuration: parseInt(formData.get("minimumDuration") as string),
+      minimumDuration: selectedSection.minimumDuration, // Keep existing value
       images:
         (formData.get("images") as string)
           ?.split(",")
@@ -1573,14 +1475,9 @@ const ManageSections = () => {
     }
 
     // Validate duration
-    const duration =
-      parseInt(durationInput) || selectedSection.minimumDuration || 60;
-    if (duration < (selectedSection.minimumDuration || 5) || duration > 480) {
-      setError(
-        `Duration must be between ${
-          selectedSection.minimumDuration || 5
-        } and 480 minutes`
-      );
+    const duration = parseInt(durationInput) || 60;
+    if (duration < 5 || duration > 480) {
+      setError(`Duration must be between 5 and 480 minutes`);
       setIsSubmittingSlotSettings(false);
       return;
     }
@@ -1615,8 +1512,8 @@ const ManageSections = () => {
       timings: validTimings,
       duration,
       bookingAllowed,
-      priceModel: selectedSection.priceModel,
-      basePrice: selectedSection.basePrice,
+      priceModel: "perHour", // Default value
+      basePrice: 0, // Default value
       customDayPrices,
       isActive: true,
     };

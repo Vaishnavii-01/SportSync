@@ -60,9 +60,9 @@ const getAvailableSlots = async (
   try {
     console.log(`Fetching slots for section ${sectionId} on ${date}`);
     const response = await axios.get(
-      "http://localhost:5000/api/bookings/available-slots",
+      `http://localhost:5000/api/slot-settings/sections/${sectionId}/available-slots`,
       {
-        params: { sectionId, date },
+        params: { date },
       }
     );
     const data = response.data;
