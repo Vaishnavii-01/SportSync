@@ -99,60 +99,73 @@ const SectionCard = ({
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-bold text-black mb-2">
+        <div className="flex flex-col md:flex-row justify-between gap-6">
+          {/* Section Info - Takes priority for space */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-bold text-gray-900 mb-2 break-words">
               {section.name}
             </h3>
-            <div className="flex flex-wrap gap-2 mb-4">
+
+            <div className="flex flex-wrap gap-2 mb-2">
               <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
                 {section.sport}
               </span>
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onEdit(section)}
-              className="p-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
-            >
-              <FaEdit />
-            </button>
-            <button
-              onClick={() => onDelete(section._id)}
-              className="p-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
-            >
-              <FaTrash />
-            </button>
-            <button
-              onClick={() => onBlockedSlots(section._id)}
-              className="px-4 py-2 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors flex items-center space-x-2"
-            >
-              <FaBan className="text-sm" />
-              <span>Blocked Slots</span>
-            </button>
-            <button
-              onClick={() => onManageSlots(section._id)}
-              className="px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-            >
-              Manage Slots
-            </button>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                section.isActive ? "bg-green-500" : "bg-red-500"
-              }`}
-            />
-            <span
-              className={`text-sm font-medium ${
-                section.isActive ? "text-green-700" : "text-red-700"
-              }`}
-            >
-              {section.isActive ? "Active" : "Inactive"}
-            </span>
+            {/* Status indicator below sport name */}
+            <div className="flex items-center space-x-1.5 mb-4">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  section.isActive ? "bg-green-500" : "bg-red-500"
+                }`}
+              />
+              <br />
+              <br />
+              <span
+                className={`text-sm font-medium ${
+                  section.isActive ? "text-green-700" : "text-red-700"
+                }`}
+              >
+                {section.isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons - Better organized and spaced */}
+          <div className="flex flex-col gap-3">
+            {/* Small actions - Top right */}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => onEdit(section)}
+                className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center"
+                aria-label="Edit section"
+              >
+                <FaEdit className="text-sm" />
+              </button>
+              <button
+                onClick={() => onDelete(section._id)}
+                className="p-2.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-colors flex items-center justify-center"
+                aria-label="Delete section"
+              >
+                <FaTrash className="text-sm" />
+              </button>
+            </div>
+
+            {/* Primary actions - Column layout as requested */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onManageSlots(section._id)}
+                className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl font-medium transition-colors flex items-center justify-center"
+              >
+                <span>Manage Slots</span>
+              </button>
+              <button
+                onClick={() => onBlockedSlots(section._id)}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center"
+              >
+                <span>Blocked Slots</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
