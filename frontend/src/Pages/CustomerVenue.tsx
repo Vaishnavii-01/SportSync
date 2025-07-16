@@ -36,27 +36,33 @@ interface Venue {
 interface Section {
   _id: string;
   name: string;
+  venue: string;
   sport: string;
-  priceModel: string;
-  basePrice: number;
   capacity: number;
   description?: string;
   images?: string[];
   rules?: string[];
+  isActive: boolean;
 }
 
 interface Slot {
-  _id: string;
+  slotId: string;
+  sectionId: string;
+  sectionName: string;
+  venueName: string;
+  date: string;
   startTime: string;
   endTime: string;
-  date: string;
-  available: boolean;
+  duration: number;
+  price: number;
+  settingName: string;
+  isAvailable: boolean;
 }
 
 const getAvailableSlots = async (
   sectionId: string,
   date: string
-): Promise<{ availableSlots: Slot[] }> => {
+): Promise<{ availableSlots: Slot[]; blockedReason?: string }> => {
   try {
     console.log(`Fetching slots for section ${sectionId} on ${date}`);
     const response = await axios.get(
@@ -68,54 +74,56 @@ const getAvailableSlots = async (
     const data = response.data;
     console.log("Slots API response:", data, "Status:", response.status);
 
-    if (!data || !Array.isArray(data.slots)) {
+    if (!data || !data.success || !Array.isArray(data.data.slots)) {
       console.error("Invalid slots response format:", data);
-      return { availableSlots: [] };
+      return { availableSlots: [], blockedReason: data.data?.blockedReason };
     }
 
-    // Map backend response to frontend Slot structure
-    const availableSlots: Slot[] = data.slots.map((slot: any) => ({
-      _id: slot.id,
+    const availableSlots: Slot[] = data.data.slots.map((slot: any) => ({
+      slotId: slot.slotId,
+      sectionId: slot.sectionId,
+      sectionName: slot.sectionName,
+      venueName: slot.venueName,
+      date: slot.date,
       startTime: slot.startTime,
       endTime: slot.endTime,
-      date: slot.date,
-      available: slot.isAvailable,
+      duration: slot.duration,
+      price: slot.price,
+      settingName: slot.settingName,
+      isAvailable: slot.isAvailable,
     }));
 
     console.log(`Mapped ${availableSlots.length} slots:`, availableSlots);
-    return { availableSlots };
+    return { availableSlots, blockedReason: data.data.blockedReason };
   } catch (error) {
     console.error("Error fetching slots:", error);
     let errorMessage = "Failed to fetch available slots from the server";
+    let blockedReason: string | undefined;
     if (axios.isAxiosError(error) && error.response) {
-      errorMessage = `Failed to fetch slots: ${
-        error.response.data?.error || error.message
-      } (Status: ${error.response.status})`;
-      if (error.response.status === 404) {
-        errorMessage = "No slot settings found for this section or date.";
-      } else if (error.response.status === 400) {
-        errorMessage =
-          "Invalid date or section ID. The date may be outside the allowed booking window (Apr 24, 2025 - Jul 31, 2025) or not on an allowed day (Mon, Wed, Fri, Sat).";
-      }
+      errorMessage = error.response.data?.error || error.message;
+      blockedReason = error.response.data?.data?.blockedReason;
     }
-    throw new Error(errorMessage);
+    // Instead of using cause, throw a custom error object with blockedReason
+    const customError = new Error(errorMessage) as Error & { blockedReason?: string };
+    customError.blockedReason = blockedReason;
+    throw customError;
   }
 };
 
 const createBooking = async (bookingData: {
   userId: string;
-  venueId: string;
   sectionId: string;
   slotId: string;
   date: string;
   startTime: string;
   endTime: string;
+  notes?: string;
 }): Promise<void> => {
   try {
     console.log("Creating booking:", bookingData);
     await axios.post("http://localhost:5000/api/bookings", bookingData);
-  } catch (error) {
     alert("Booking Successful");
+  } catch (error) {
     console.error("Error creating booking:", error);
     let errorMessage = "Failed to create booking on the server";
     if (axios.isAxiosError(error) && error.response) {
@@ -127,7 +135,6 @@ const createBooking = async (bookingData: {
   }
 };
 
-// Error Boundary Component
 const ErrorBoundary = ({
   children,
   fallback,
@@ -157,10 +164,17 @@ const CustomerVenue = () => {
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [blockedReason, setBlockedReason] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null); // TODO: Replace with auth context
+
+  useEffect(() => {
+    // Simulate fetching userId from auth context (replace with actual auth logic)
+    setUserId("6863d1cfa8d1e82535f71e3f"); // Placeholder; integrate with auth system in production
+  }, []);
 
   useEffect(() => {
     const fetchVenue = async () => {
@@ -188,16 +202,17 @@ const CustomerVenue = () => {
   const fetchSlots = async (sectionId: string, date: string) => {
     setSlotsLoading(true);
     setError(null);
+    setBlockedReason(undefined);
     try {
-      const slotData = await getAvailableSlots(sectionId, date);
-      console.log(
-        `Received ${slotData.availableSlots.length} slots for ${date}`
-      );
-      setSlots(slotData.availableSlots);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch available slots"
-      );
+      const { availableSlots, blockedReason } = await getAvailableSlots(sectionId, date);
+      console.log(`Received ${availableSlots.length} slots for ${date}`);
+      setSlots(availableSlots);
+      setBlockedReason(blockedReason);
+    } catch (err: any) {
+      const errorMessage = err.message || "Failed to fetch available slots";
+      const blockedReason = err.blockedReason;
+      setError(errorMessage);
+      if (blockedReason) setBlockedReason(blockedReason);
     } finally {
       setSlotsLoading(false);
     }
@@ -208,36 +223,26 @@ const CustomerVenue = () => {
     setSelectedDate("");
     setSlots([]);
     setError(null);
+    setBlockedReason(undefined);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const date = e.target.value;
     const today = new Date().toISOString().split("T")[0];
-    const bookingStartDate = "2025-04-24"; // 91 days before startDate (2025-07-24)
+
     if (date < today) {
       setError("Cannot select a past date");
       setSelectedDate("");
       setSlots([]);
+      setBlockedReason(undefined);
       return;
     }
-    if (date < bookingStartDate) {
-      setError("Bookings are only allowed starting from April 24, 2025");
-      setSelectedDate("");
-      setSlots([]);
-      return;
-    }
-    if (date > "2025-07-31") {
-      setError("Bookings are only allowed up to July 31, 2025");
-      setSelectedDate("");
-      setSlots([]);
-      return;
-    }
+
     setSelectedDate(date);
     setError(null);
+    setBlockedReason(undefined);
     if (selectedSection && date) {
-      console.log(
-        `Calling fetchSlots for section ${selectedSection._id} and date ${date}`
-      );
+      console.log(`Calling fetchSlots for section ${selectedSection._id} and date ${date}`);
       fetchSlots(selectedSection._id, date);
     }
   };
@@ -248,22 +253,26 @@ const CustomerVenue = () => {
       return;
     }
 
+    if (!userId) {
+      setError("You must be logged in to book a slot");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     const bookingData = {
-      userId: "6863d1cfa8d1e82535f71e3f", // Replace with auth context in production
-      venueId: id,
+      userId,
       sectionId: selectedSection._id,
-      slotId: slot._id,
+      slotId: slot.slotId,
       date: slot.date,
       startTime: slot.startTime,
       endTime: slot.endTime,
+      notes: "", // Optional field as per backend
     };
 
     try {
       await createBooking(bookingData);
-      alert("Booking successful!");
       if (selectedDate && selectedSection) {
         fetchSlots(selectedSection._id, selectedDate); // Refresh slots after booking
       }
@@ -278,6 +287,10 @@ const CustomerVenue = () => {
     return `${address.street}, ${address.city}, ${address.state}, ${address.country} ${address.zipCode}`;
   };
 
+  const formatPrice = (price: number) => {
+    return `₹${price.toFixed(2)}`;
+  };
+
   const fallbackUI = (
     <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
       <div className="text-center">
@@ -285,8 +298,7 @@ const CustomerVenue = () => {
           Something went wrong
         </h3>
         <p className="text-gray-500 mb-6">
-          An error occurred while rendering the page. Please try again or
-          contact support.
+          An error occurred while rendering the page. Please try again or contact support.
         </p>
         <Link
           to="/customer-grid"
@@ -436,9 +448,6 @@ const CustomerVenue = () => {
                               Sport: {section.sport}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Price: ₹{section.basePrice} ({section.priceModel})
-                            </p>
-                            <p className="text-sm text-gray-600">
                               Capacity: {section.capacity}
                             </p>
                             {section.rules && section.rules.length > 0 && (
@@ -466,8 +475,6 @@ const CustomerVenue = () => {
                         type="date"
                         value={selectedDate}
                         onChange={handleDateChange}
-                        min="2025-04-24" // 91 days before startDate (2025-07-24)
-                        max="2025-07-31" // endDate
                         className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                       />
                     </div>
@@ -484,26 +491,25 @@ const CustomerVenue = () => {
                           </div>
                         ) : slots.length === 0 ? (
                           <p className="text-gray-500">
-                            No slots available for this date. The date may be
-                            outside the allowed booking window (Apr 24, 2025 -
-                            Jul 31, 2025), not on an allowed day (Mon, Wed, Fri,
-                            Sat), or all slots may be booked.
+                            {blockedReason
+                              ? `No slots available: ${blockedReason}`
+                              : "No slots available for this date. Please try another date or section."}
                           </p>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {slots.map((slot) => (
                               <button
-                                key={slot._id}
+                                key={slot.slotId}
                                 onClick={() => handleBookSlot(slot)}
-                                disabled={!slot.available || isSubmitting}
+                                disabled={!slot.isAvailable || isSubmitting || !userId}
                                 className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                                  slot.available && !isSubmitting
+                                  slot.isAvailable && !isSubmitting && userId
                                     ? "bg-black text-white hover:bg-gray-800"
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                               >
-                                {slot.startTime} - {slot.endTime}{" "}
-                                {slot.available ? "" : "(Booked)"}
+                                {slot.startTime} - {slot.endTime} ({formatPrice(slot.price)})
+                                {slot.isAvailable ? "" : " (Booked)"}
                               </button>
                             ))}
                           </div>
@@ -512,7 +518,6 @@ const CustomerVenue = () => {
                     )}
                   </div>
                 )}
-                {/* 
                 {error && (
                   <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
                     <svg
@@ -530,12 +535,12 @@ const CustomerVenue = () => {
                     </svg>
                     <span>{error}</span>
                   </div>
-                )} */}
+                )}
               </div>
             </div>
+            <Footer />
           </>
         )}
-        <Footer />
       </div>
     </ErrorBoundary>
   );
