@@ -26,10 +26,16 @@ const getDayOfWeek = (date: Date): string => {
 const calculateSlotPrice = (
   slotSetting: ISlotSettings,
   date: Date,
-  dayOfWeek: string
+  dayOfWeek: string,
+  duration: number
 ): number => {
-  const dayPrice = slotSetting.customDayPrice?.find((cdp) => cdp.day === dayOfWeek);
-  return dayPrice ? dayPrice.price : slotSetting.price;
+  // Get base hourly price
+  const hourlyPrice = slotSetting.customDayPrice?.find((cdp) => cdp.day === dayOfWeek)?.price 
+    || slotSetting.price;
+  
+  // Calculate total price based on duration in hours
+  const hours = duration / 60; // Convert duration from minutes to hours
+  return hourlyPrice * hours;
 };
 
 // Helper function to check if time overlaps with blocked times
@@ -168,7 +174,7 @@ export const createSlotSettings = async (req: Request, res: Response) => {
       days: days || [],
       timings,
       duration,
-      price,
+      price, // This now represents price per hour
       customDayPrice: customDayPrice || [],
       maxAdvanceBooking: maxAdvanceBooking || 30,
     });
@@ -336,7 +342,7 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
         );
 
         if (!isBlocked) {
-          const price = calculateSlotPrice(setting, targetDate, dayOfWeek);
+          const price = calculateSlotPrice(setting, targetDate, dayOfWeek, setting.duration);
           const slotId = `${sectionId}-${targetDate.toISOString().split('T')[0]}-${startTimeStr}`;
 
           availableSlots.push({

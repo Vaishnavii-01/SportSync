@@ -398,7 +398,6 @@ const SectionFormModal = ({
 
 // SlotSettingsFormModal
 const SlotSettingsFormModal = ({
-  venue,
   section,
   slotSettings,
   onSubmit,
@@ -842,7 +841,7 @@ const BlockedSlotSettingsModal = ({
   error,
 }: {
   section: Section;
-  blockedSlot?: BlockedSlot;
+  blockedSlot?: BlockedSlot | null;
   onSubmit: (
     e: React.FormEvent<HTMLFormElement>,
     timings: TimingSlot[]
@@ -1719,134 +1718,132 @@ const ManageSections = () => {
   };
 
   const handleCreateSlotSettings = async (
-    e: React.FormEvent<HTMLFormElement>,
-    timings: TimingSlot[],
-    customDayPrice: { day: string; price: number }[]
-  ) => {
-    e.preventDefault();
-    if (!venueId || !selectedSection) {
-      setError("Venue ID or section is missing");
-      return;
-    }
-    setIsSubmittingSlotSettings(true);
-    setError(null);
+  e: React.FormEvent<HTMLFormElement>,
+  timings: TimingSlot[],
+  customDayPrice: { day: string; price: number }[]
+) => {
+  e.preventDefault();
+  if (!venueId || !selectedSection) {
+    setError("Venue ID or section is missing");
+    return;
+  }
+  setIsSubmittingSlotSettings(true);
+  setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name")?.toString();
-    const startDate = formData.get("startDate")?.toString() || undefined;
-    const endDate = formData.get("endDate")?.toString() || undefined;
-    const days = formData.get("days")?.toString();
-    const duration = formData.get("duration")?.toString();
-    const price = formData.get("price")?.toString();
-    const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
+  const formData = new FormData(e.currentTarget);
+  const name = formData.get("name")?.toString();
+  const startDate = formData.get("startDate")?.toString() || undefined;
+  const endDate = formData.get("endDate")?.toString() || undefined;
+  const days = formData.get("days")?.toString();
+  const duration = formData.get("duration")?.toString();
+  const price = formData.get("price")?.toString();
+  const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
 
-    if (!name || !duration || !price || !maxAdvanceBooking || !days) {
-      setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
-      setIsSubmittingSlotSettings(false);
-      return;
-    }
+  if (!name || !duration || !price || !maxAdvanceBooking || !days) {
+    setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
+    setIsSubmittingSlotSettings(false);
+    return;
+  }
 
-    if (!timings.every((t) => t.startTime && t.endTime)) {
-      setError("All timing slots must have valid start and end times");
-      setIsSubmittingSlotSettings(false);
-      return;
-    }
+  if (!timings.every((t) => t.startTime && t.endTime)) {
+    setError("All timing slots must have valid start and end times");
+    setIsSubmittingSlotSettings(false);
+    return;
+  }
 
-    const slotSettingsData: Omit<SlotSettings, "_id"> = {
-      name,
-      venueId, // Changed from venue to venueId
-      sectionId: selectedSection._id, // Changed from section to sectionId
-      startDate,
-      endDate,
-      days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-      timings,
-      duration: parseInt(duration),
-      price: parseFloat(price),
-      customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
-      maxAdvanceBooking: parseInt(maxAdvanceBooking),
-      isActive: true,
-    };
-
-    try {
-      const newSlotSettings = await createSlotSettings(
-        selectedSection._id,
-        slotSettingsData
-      );
-      setSlotSettingsList((prev) => [...prev, newSlotSettings]);
-      setShowSlotSettingsFormModal(false);
-    } catch (err: unknown) {
-      const appError = err as AppError;
-      setError(appError.message || "Failed to create slot settings");
-      console.error("Create slot settings error:", appError);
-    } finally {
-      setIsSubmittingSlotSettings(false);
-    }
+  const slotSettingsData: Omit<SlotSettings, "_id"> = {
+    name,
+    venue: venueId, // Changed from venueId to venue
+    section: selectedSection._id, // Changed from sectionId to section
+    startDate,
+    endDate,
+    days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+    timings,
+    duration: parseInt(duration),
+    price: parseFloat(price),
+    customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
+    maxAdvanceBooking: parseInt(maxAdvanceBooking),
+    isActive: true,
   };
 
+  try {
+    const newSlotSettings = await createSlotSettings(
+      selectedSection._id,
+      slotSettingsData
+    );
+    setSlotSettingsList((prev) => [...prev, newSlotSettings]);
+    setShowSlotSettingsFormModal(false);
+  } catch (err: unknown) {
+    const appError = err as AppError;
+    setError(appError.message || "Failed to create slot settings");
+    console.error("Create slot settings error:", appError);
+  } finally {
+    setIsSubmittingSlotSettings(false);
+  }
+};
   const handleUpdateSlotSettings = async (
-    e: React.FormEvent<HTMLFormElement>,
-    timings: TimingSlot[],
-    customDayPrice: { day: string; price: number }[]
-  ) => {
-    e.preventDefault();
-    if (!selectedSlotSettings || !selectedSection) {
-      setError("Slot settings or section is missing");
-      return;
-    }
-    setIsSubmittingSlotSettings(true);
-    setError(null);
+  e: React.FormEvent<HTMLFormElement>,
+  timings: TimingSlot[],
+  customDayPrice: { day: string; price: number }[]
+) => {
+  e.preventDefault();
+  if (!selectedSlotSettings || !selectedSection) {
+    setError("Slot settings or section is missing");
+    return;
+  }
+  setIsSubmittingSlotSettings(true);
+  setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name")?.toString();
-    const startDate = formData.get("startDate")?.toString() || undefined;
-    const endDate = formData.get("endDate")?.toString() || undefined;
-    const days = formData.get("days")?.toString();
-    const duration = formData.get("duration")?.toString();
-    const price = formData.get("price")?.toString();
-    const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
+  const formData = new FormData(e.currentTarget);
+  const name = formData.get("name")?.toString();
+  const startDate = formData.get("startDate")?.toString() || undefined;
+  const endDate = formData.get("endDate")?.toString() || undefined;
+  const days = formData.get("days")?.toString();
+  const duration = formData.get("duration")?.toString();
+  const price = formData.get("price")?.toString();
+  const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
 
-    if (!name || !duration || !price || !maxAdvanceBooking || !days) {
-      setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
-      setIsSubmittingSlotSettings(false);
-      return;
-    }
+  if (!name || !duration || !price || !maxAdvanceBooking || !days) {
+    setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
+    setIsSubmittingSlotSettings(false);
+    return;
+  }
 
-    const slotSettingsData: Partial<SlotSettings> = {
-      name,
-      venue: venueId,
-      section: selectedSection._id,
-      startDate,
-      endDate,
-      days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-      timings,
-      duration: parseInt(duration),
-      price: parseFloat(price),
-      customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
-      maxAdvanceBooking: parseInt(maxAdvanceBooking),
-      isActive: true,
-    };
-
-    try {
-      const updatedSlotSettings = await updateSlotSettings(
-        selectedSlotSettings._id,
-        slotSettingsData
-      );
-      setSlotSettingsList((prev) =>
-        prev.map((s) =>
-          s._id === selectedSlotSettings._id ? updatedSlotSettings : s
-        )
-      );
-      setShowSlotSettingsFormModal(false);
-      setSelectedSlotSettings(null);
-    } catch (err: unknown) {
-      const appError = err as AppError;
-      setError(appError.message || "Failed to update slot settings");
-      console.error("Update slot settings error:", appError);
-    } finally {
-      setIsSubmittingSlotSettings(false);
-    }
+  const slotSettingsData: Partial<SlotSettings> = {
+    name,
+    venue: venueId, // Changed from venue to venueId
+    section: selectedSection._id, // Changed from section to sectionId
+    startDate,
+    endDate,
+    days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+    timings,
+    duration: parseInt(duration),
+    price: parseFloat(price),
+    customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
+    maxAdvanceBooking: parseInt(maxAdvanceBooking),
+    isActive: true,
   };
 
+  try {
+    const updatedSlotSettings = await updateSlotSettings(
+      selectedSlotSettings._id,
+      slotSettingsData
+    );
+    setSlotSettingsList((prev) =>
+      prev.map((s) =>
+        s._id === selectedSlotSettings._id ? updatedSlotSettings : s
+      )
+    );
+    setShowSlotSettingsFormModal(false);
+    setSelectedSlotSettings(null);
+  } catch (err: unknown) {
+    const appError = err as AppError;
+    setError(appError.message || "Failed to update slot settings");
+    console.error("Update slot settings error:", appError);
+  } finally {
+    setIsSubmittingSlotSettings(false);
+  }
+};
   const handleDeleteSlotSettings = async (slotSettingsId: string) => {
     if (!window.confirm("Are you sure you want to delete this slot settings?"))
       return;

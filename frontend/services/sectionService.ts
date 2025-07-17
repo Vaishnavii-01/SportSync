@@ -96,9 +96,17 @@ export const deleteSection = async (sectionId: string): Promise<void> => {
 // Slot Settings operations
 export const createSlotSettings = async (sectionId: string, settingsData: Omit<SlotSettings, "_id">): Promise<SlotSettings> => {
   try {
+    // Map venue and section to venueId and sectionId for the API
+    const formattedData = {
+      ...settingsData,
+      venueId: settingsData.venue, // Map venue to venueId
+      sectionId: settingsData.section, // Map section to sectionId
+      venue: undefined, // Remove original venue field
+      section: undefined, // Remove original section field
+    };
     const response = await axios.post(
       `${API_BASE_URL}/slot-settings/sections/${sectionId}/slot-settings`,
-      settingsData
+      formattedData
     );
     return response.data.data;
   } catch (error: any) {
