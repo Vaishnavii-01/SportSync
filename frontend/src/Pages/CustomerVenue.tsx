@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getVenueById } from "../../services/venueService";
 import { getVenueSections } from "../../services/sectionService";
 import Footer from "../Components/Footer/VOFooter";
 import CustomerNavbar from "../Components/Navbar/CustomerNavbar";
-import { FaMapMarkerAlt, FaClock, FaPhone, FaStar } from "react-icons/fa";
+import { FaMapMarkerAlt, FaClock, FaPhone, FaStar, FaCheckCircle } from "react-icons/fa";
 import axios from "axios";
 
 interface Address {
@@ -64,7 +64,6 @@ const getAvailableSlots = async (
   date: string
 ): Promise<{ availableSlots: Slot[]; blockedReason?: string }> => {
   try {
-    console.log(`Fetching slots for section ${sectionId} on ${date}`);
     const response = await axios.get(
       `http://localhost:5000/api/slot-settings/sections/${sectionId}/available-slots`,
       {
@@ -72,10 +71,8 @@ const getAvailableSlots = async (
       }
     );
     const data = response.data;
-    console.log("Slots API response:", data, "Status:", response.status);
 
     if (!data || !data.success || !Array.isArray(data.data.slots)) {
-      console.error("Invalid slots response format:", data);
       return { availableSlots: [], blockedReason: data.data?.blockedReason };
     }
 
@@ -93,7 +90,6 @@ const getAvailableSlots = async (
       isAvailable: slot.isAvailable,
     }));
 
-    console.log(`Mapped ${availableSlots.length} slots:`, availableSlots);
     return { availableSlots, blockedReason: data.data.blockedReason };
   } catch (error) {
     console.error("Error fetching slots:", error);
@@ -103,35 +99,9 @@ const getAvailableSlots = async (
       errorMessage = error.response.data?.error || error.message;
       blockedReason = error.response.data?.data?.blockedReason;
     }
-    // Instead of using cause, throw a custom error object with blockedReason
     const customError = new Error(errorMessage) as Error & { blockedReason?: string };
     customError.blockedReason = blockedReason;
     throw customError;
-  }
-};
-
-const createBooking = async (bookingData: {
-  userId: string;
-  sectionId: string;
-  slotId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  notes?: string;
-}): Promise<void> => {
-  try {
-    console.log("Creating booking:", bookingData);
-    await axios.post("http://localhost:5000/api/bookings", bookingData);
-    alert("Booking Successful");
-  } catch (error) {
-    console.error("Error creating booking:", error);
-    let errorMessage = "Failed to create booking on the server";
-    if (axios.isAxiosError(error) && error.response) {
-      errorMessage = `Failed to create booking: ${
-        error.response.data?.error || error.message
-      } (Status: ${error.response.status})`;
-    }
-    throw new Error(errorMessage);
   }
 };
 
@@ -159,6 +129,7 @@ const ErrorBoundary = ({
 
 const CustomerVenue = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
@@ -168,12 +139,11 @@ const CustomerVenue = () => {
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null); // TODO: Replace with auth context
+  const [userId, setUserId] = useState<string | null>(null);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   useEffect(() => {
-    // Simulate fetching userId from auth context (replace with actual auth logic)
-    setUserId("6863d1cfa8d1e82535f71e3f"); // Placeholder; integrate with auth system in production
+    setUserId("6863d1cfa8d1e82535f71e3f");
   }, []);
 
   useEffect(() => {
@@ -199,13 +169,23 @@ const CustomerVenue = () => {
     fetchVenue();
   }, [id]);
 
+  useEffect(() => {
+    const locationState = window.history.state?.usr || {};
+    if (locationState.bookingSuccess) {
+      setBookingSuccess(true);
+      if (locationState.bookedDate === selectedDate && selectedSection) {
+        fetchSlots(selectedSection._id, selectedDate);
+      }
+      window.history.replaceState({ ...window.history.state, usr: {} }, '');
+    }
+  }, []);
+
   const fetchSlots = async (sectionId: string, date: string) => {
     setSlotsLoading(true);
     setError(null);
     setBlockedReason(undefined);
     try {
       const { availableSlots, blockedReason } = await getAvailableSlots(sectionId, date);
-      console.log(`Received ${availableSlots.length} slots for ${date}`);
       setSlots(availableSlots);
       setBlockedReason(blockedReason);
     } catch (err: any) {
@@ -224,6 +204,7 @@ const CustomerVenue = () => {
     setSlots([]);
     setError(null);
     setBlockedReason(undefined);
+    setBookingSuccess(false);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,46 +222,29 @@ const CustomerVenue = () => {
     setSelectedDate(date);
     setError(null);
     setBlockedReason(undefined);
+    setBookingSuccess(false);
     if (selectedSection && date) {
-      console.log(`Calling fetchSlots for section ${selectedSection._id} and date ${date}`);
       fetchSlots(selectedSection._id, date);
     }
   };
 
-  const handleBookSlot = async (slot: Slot) => {
-    if (!selectedSection || !id) {
-      setError("Please select a section and venue");
-      return;
-    }
-
-    if (!userId) {
-      setError("You must be logged in to book a slot");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    const bookingData = {
-      userId,
-      sectionId: selectedSection._id,
-      slotId: slot.slotId,
-      date: slot.date,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      notes: "", // Optional field as per backend
-    };
-
-    try {
-      await createBooking(bookingData);
-      if (selectedDate && selectedSection) {
-        fetchSlots(selectedSection._id, selectedDate); // Refresh slots after booking
+  const handleSlotClick = (slot: Slot) => {
+    if (!selectedSection || !venue || !slot.isAvailable || !userId) {
+      if (!slot.isAvailable) {
+        setError("This slot is already booked");
+      } else if (!userId) {
+        setError("You must be logged in to book a slot");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create booking");
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    navigate("/customer-booking", {
+      state: {
+        slot,
+        venue,
+        section: selectedSection,
+      },
+    });
   };
 
   const formatAddress = (address: Address) => {
@@ -291,27 +255,25 @@ const CustomerVenue = () => {
     return `₹${price.toFixed(2)}`;
   };
 
-  const fallbackUI = (
-    <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
-      <div className="text-center">
-        <h3 className="text-xl font-semibold text-gray-700 mb-2">
-          Something went wrong
-        </h3>
-        <p className="text-gray-500 mb-6">
-          An error occurred while rendering the page. Please try again or contact support.
-        </p>
-        <Link
-          to="/customer-grid"
-          className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-        >
-          <span>Back to Venues</span>
-        </Link>
-      </div>
-    </div>
-  );
-
   return (
-    <ErrorBoundary fallback={fallbackUI}>
+    <ErrorBoundary fallback={
+      <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Something went wrong
+          </h3>
+          <p className="text-gray-500 mb-6">
+            An error occurred while rendering the page. Please try again or contact support.
+          </p>
+          <Link
+            to="/customer-grid"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+          >
+            <span>Back to Venues</span>
+          </Link>
+        </div>
+      </div>
+    }>
       <CustomerNavbar />
       <div className="min-h-screen bg-[#FFFFF8]">
         {loading ? (
@@ -361,6 +323,13 @@ const CustomerVenue = () => {
 
             <div className="px-6 sm:px-12 lg:px-20 -mt-8 mb-12">
               <div className="max-w-7xl mx-auto">
+                {bookingSuccess && (
+                  <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-100 flex items-center">
+                    <FaCheckCircle className="text-green-500 mr-2" />
+                    <span>Booking confirmed successfully!</span>
+                  </div>
+                )}
+
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -403,7 +372,6 @@ const CustomerVenue = () => {
                           className="w-full h-64 object-cover rounded-xl"
                           onError={(e) => {
                             e.currentTarget.src = "/placeholder-image.jpg";
-                            console.error("Failed to load venue image");
                           }}
                         />
                       ) : (
@@ -500,10 +468,10 @@ const CustomerVenue = () => {
                             {slots.map((slot) => (
                               <button
                                 key={slot.slotId}
-                                onClick={() => handleBookSlot(slot)}
-                                disabled={!slot.isAvailable || isSubmitting || !userId}
+                                onClick={() => handleSlotClick(slot)}
+                                disabled={!slot.isAvailable || !userId}
                                 className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                                  slot.isAvailable && !isSubmitting && userId
+                                  slot.isAvailable && userId
                                     ? "bg-black text-white hover:bg-gray-800"
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}

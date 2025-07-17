@@ -11,6 +11,7 @@ import CustomerDashboard from "./Pages/CustomerDashboard";
 import ContactPage from "./Pages/ContactPage";
 import ExplorePublicGrid from "./Pages/ExplorePublicGrid";
 import ManageSections from "./Pages/ManageSections";
+import CustomerBookingPage from "./Pages/CustomerBookingPage";
 import "../index.css";
 
 const App = () => {
@@ -25,6 +26,7 @@ const App = () => {
         <Route path="/venues/:venueId/sections" element={<ManageSections />} />
         <Route path="/customer/search" element={<CustomerGrid />} />
         <Route path="/customer/venue/:id" element={<CustomerVenue />} />
+        <Route path="/customer-booking" element={<CustomerBookingPage />} />
         <Route path="/customer/settings/:id" element={<CustomerSettings />} />
         <Route path="/customer/dashboard" element={<CustomerDashboard />} />
         <Route path="/contact" element={<ContactPage />} />

@@ -233,42 +233,28 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
 // Create a new booking
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    // For now, we'll use a placeholder user ID since auth is not set up
-    const userId = 'placeholder-user-id';
-    const { sectionId, date, startTime, endTime, notes } = req.body;
+    const {
+      user,
+      section,
+      venue,
+      slotId,
+      date,
+      startTime,
+      endTime,
+      duration,
+      price,
+      notes
+    } = req.body;
 
     // Validate required fields
-    if (!sectionId || !date || !startTime || !endTime) {
+    if (!duration || !price || !venue || !section || !user) {
       return res.status(400).json({
         success: false,
-        error: 'Section ID, date, start time, and end time are required',
-      });
-    }
-
-    const bookingDate = normalizeDate(new Date(date));
-    const today = normalizeDate(new Date());
-
-    // Check if booking date is in the past
-    if (bookingDate < today) {
-      return res.status(400).json({
-        success: false,
-        error: 'Cannot book for past dates',
-      });
-    }
-
-    // Get the section and venue
-    const section = await Section.findById(sectionId).populate('venue');
-    if (!section) {
-      return res.status(404).json({
-        success: false,
-        error: 'Section not found',
+        error: "Duration, price, venue, section, and user are required fields"
       });
     }
 
     // Check if the slot is available
-    const slotId = `${sectionId}-${bookingDate.toISOString().split('T')[0]}-${startTime}`;
-
-    // Check existing bookings
     const existingBooking = await Booking.findOne({
       slotId,
       status: { $ne: 'cancelled' },
@@ -281,53 +267,27 @@ export const createBooking = async (req: Request, res: Response) => {
       });
     }
 
-    // Get slot settings to calculate price
-    const dayOfWeek = getDayOfWeek(bookingDate);
-    const slotSettings = await SlotSettings.findOne({
-      section: sectionId,
-      isActive: true,
-      $or: [
-        { startDate: { $exists: false } },
-        { startDate: { $lte: bookingDate } },
-        { endDate: { $exists: false } },
-        { endDate: { $gte: bookingDate } },
-      ],
-      days: dayOfWeek,
-    });
-
-    if (!slotSettings) {
-      return res.status(400).json({
-        success: false,
-        error: 'No available slot settings for this date and time',
-      });
-    }
-
-    // Calculate price
-    const price = calculateSlotPrice(slotSettings, bookingDate, dayOfWeek);
-
-    // Create the booking
     const booking = new Booking({
-      user: userId,
-      venue: section.venue._id,
-      section: sectionId,
-      date: bookingDate,
-      startTime: timeStringToDate(bookingDate, startTime),
-      endTime: timeStringToDate(bookingDate, endTime),
-      duration: (new Date(timeStringToDate(bookingDate, endTime)).getTime() -
-        new Date(timeStringToDate(bookingDate, startTime)).getTime()) / (1000 * 60),
+      user,
+      venue,
+      section,
+      date: new Date(date),
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
+      duration,
       price,
       status: 'confirmed',
       paymentStatus: 'completed',
-      notes,
-      slotId,
+      notes: notes || '',
+      slotId
     });
 
-    await booking.save();
+    const savedBooking = await booking.save();
 
     res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      data: booking,
+      data: savedBooking,
     });
   } catch (error: any) {
     console.error('Create Booking Error:', error);
