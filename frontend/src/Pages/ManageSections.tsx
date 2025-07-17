@@ -67,8 +67,8 @@ interface BlockedSlot {
   name: string;
   venue: string;
   section: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   days: string[];
   timings: TimingSlot[];
   reason: string;
@@ -839,6 +839,9 @@ const SlotSettingsFormModal = ({
 };
 
 // BlockedSlotSettingsModal - Updated with CODE 2 styling
+// ... (previous code remains unchanged) ...
+
+// BlockedSlotSettingsModal - Updated with CODE 2 styling
 const BlockedSlotSettingsModal = ({
   section,
   blockedSlot,
@@ -858,7 +861,7 @@ const BlockedSlotSettingsModal = ({
   error: string | null;
 }) => {
   const [timings, setTimings] = useState<TimingSlot[]>(
-    blockedSlot?.timings || [{ startTime: "", endTime: "" }]
+    blockedSlot?.timings || []
   );
   const [name, setName] = useState<string>(blockedSlot?.name || "");
   const [startDate, setStartDate] = useState<string>(
@@ -877,9 +880,7 @@ const BlockedSlotSettingsModal = ({
   };
 
   const removeTimingSlot = (index: number) => {
-    if (timings.length > 1) {
-      setTimings(timings.filter((_, i) => i !== index));
-    }
+    setTimings(timings.filter((_, i) => i !== index));
   };
 
   const updateTimingSlot = (
@@ -900,6 +901,9 @@ const BlockedSlotSettingsModal = ({
 
   const validateTimings = () => {
     return timings.every((t) => {
+      // Skip validation for completely empty slots
+      if (!t.startTime && !t.endTime) return true;
+
       if (!t.startTime || !t.endTime) return false;
       const [startHour, startMin] = t.startTime.split(":").map(Number);
       const [endHour, endMin] = t.endTime.split(":").map(Number);
@@ -910,30 +914,50 @@ const BlockedSlotSettingsModal = ({
   };
 
   const validateDates = () => {
-    if (!startDate || !endDate) return false;
-    return new Date(startDate) <= new Date(endDate);
+    if (!startDate && !endDate) return true;
+    if (startDate && endDate) {
+      return new Date(startDate) <= new Date(endDate);
+    }
+    return false;
+  };
+
+  const isFormEmpty = () => {
+    const hasNonEmptyTiming = timings.some((t) => t.startTime || t.endTime);
+    return (
+      !name &&
+      !startDate &&
+      !endDate &&
+      days.length === 0 &&
+      !hasNonEmptyTiming &&
+      !reason
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Check if at least one field is filled
+    if (isFormEmpty()) {
+      alert("Please fill at least one field to submit");
+      return;
+    }
+
+    // Validate only if there are any timings with values
     if (!validateTimings()) {
       alert(
-        "All timing slots must have valid start and end times (start < end)"
+        "Timing slots must have valid start and end times (start < end) if provided"
       );
       return;
     }
+
+    // Validate dates only if both are provided
     if (!validateDates()) {
-      alert("Start date must be before or equal to end date");
+      alert(
+        "If dates are provided, both must be filled and start date must be before or equal to end date"
+      );
       return;
     }
-    if (days.length === 0) {
-      alert("At least one day must be selected");
-      return;
-    }
-    if (!name || !reason) {
-      alert("Name and reason are required");
-      return;
-    }
+
     await onSubmit(e, timings);
   };
 
@@ -995,12 +1019,11 @@ const BlockedSlotSettingsModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Name <span className="text-red-500">*</span>
+                  Name
                 </label>
                 <input
                   type="text"
                   name="name"
-                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
@@ -1010,12 +1033,11 @@ const BlockedSlotSettingsModal = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Start Date <span className="text-red-500">*</span>
+                    Start Date
                   </label>
                   <input
                     type="date"
                     name="startDate"
-                    required
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
@@ -1023,12 +1045,11 @@ const BlockedSlotSettingsModal = ({
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    End Date <span className="text-red-500">*</span>
+                    End Date
                   </label>
                   <input
                     type="date"
                     name="endDate"
-                    required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
@@ -1037,7 +1058,7 @@ const BlockedSlotSettingsModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Days <span className="text-red-500">*</span>
+                  Days
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
                   {daysOfWeek.map((day) => (
@@ -1055,22 +1076,16 @@ const BlockedSlotSettingsModal = ({
                     </button>
                   ))}
                 </div>
-                <input
-                  type="hidden"
-                  name="days"
-                  value={days.join(",")}
-                  required
-                />
+                <input type="hidden" name="days" value={days.join(",")} />
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Blocked Time Slots <span className="text-red-500">*</span>
+                  Blocked Time Slots
                 </label>
                 {timings.map((timing, index) => (
                   <div key={index} className="flex items-center space-x-2 mb-2">
                     <input
                       type="time"
-                      required
                       value={timing.startTime}
                       onChange={(e) =>
                         updateTimingSlot(index, "startTime", e.target.value)
@@ -1079,22 +1094,19 @@ const BlockedSlotSettingsModal = ({
                     />
                     <input
                       type="time"
-                      required
                       value={timing.endTime}
                       onChange={(e) =>
                         updateTimingSlot(index, "endTime", e.target.value)
                       }
                       className="w-1/2 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     />
-                    {timings.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeTimingSlot(index)}
-                        className="p-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
-                      >
-                        <FaTrash />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeTimingSlot(index)}
+                      className="p-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
                 ))}
                 <button
@@ -1111,11 +1123,10 @@ const BlockedSlotSettingsModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Reason <span className="text-red-500">*</span>
+                  Reason
                 </label>
                 <textarea
                   name="reason"
-                  required
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white resize-none"
@@ -1207,7 +1218,6 @@ const BlockedSlotSettingsModal = ({
   );
 };
 
-// SlotSettingsListModal - Updated with CODE 2 styling
 const SlotSettingsListModal = ({
   section,
   slotSettingsList,
@@ -1921,24 +1931,68 @@ const ManageSections = () => {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get("name")?.toString();
-    const startDate = formData.get("startDate")?.toString();
-    const endDate = formData.get("endDate")?.toString();
-    const days = formData.get("days")?.toString();
-    const reason = formData.get("reason")?.toString();
+    const name = formData.get("name")?.toString() || "";
+    const startDate = formData.get("startDate")?.toString() || undefined;
+    const endDate = formData.get("endDate")?.toString() || undefined;
+    const daysString = formData.get("days")?.toString() || "";
+    const reason = formData.get("reason")?.toString() || "";
 
-    if (!name || !startDate || !endDate || !days || !reason) {
-      setError(
-        "Required fields are missing: name, startDate, endDate, days, or reason"
-      );
+    // Process days
+    const days = daysString
+      ? daysString
+          .split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean)
+      : [];
+
+    // Filter out empty timing slots and check for any non-empty timings
+    const validTimings = timings.filter((t) => t.startTime && t.endTime);
+    const hasNonEmptyTimings = timings.some((t) => t.startTime || t.endTime);
+
+    // Check if at least one field is provided
+    if (
+      !name &&
+      !startDate &&
+      !endDate &&
+      days.length === 0 &&
+      validTimings.length === 0 &&
+      !reason
+    ) {
+      setError("At least one field must be provided to create a blocked slot");
       setIsSubmittingBlockedSlots(false);
       return;
     }
 
-    if (!timings.every((t) => t.startTime && t.endTime)) {
-      setError("All timing slots must have valid start and end times");
+    // Validate dates if both are provided
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setError("Start date must be before or equal to end date");
+        setIsSubmittingBlockedSlots(false);
+        return;
+      }
+    } else if (startDate || endDate) {
+      // If only one date is provided, require both
+      setError("Both start date and end date must be provided if one is set");
       setIsSubmittingBlockedSlots(false);
       return;
+    }
+
+    // Validate timings for non-empty slots
+    if (hasNonEmptyTimings) {
+      const invalidTiming = validTimings.some((t) => {
+        const [startHour, startMin] = t.startTime.split(":").map(Number);
+        const [endHour, endMin] = t.endTime.split(":").map(Number);
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+        return startMinutes >= endMinutes;
+      });
+      if (invalidTiming) {
+        setError(
+          "All non-empty timing slots must have valid start and end times (start < end)"
+        );
+        setIsSubmittingBlockedSlots(false);
+        return;
+      }
     }
 
     const blockedSlotData: Omit<BlockedSlot, "_id"> = {
@@ -1947,11 +2001,8 @@ const ManageSections = () => {
       section: selectedSection._id,
       startDate,
       endDate,
-      days: days
-        .split(",")
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean),
-      timings,
+      days,
+      timings: validTimings,
       reason,
       isActive: true,
     };
