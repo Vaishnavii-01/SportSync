@@ -10,7 +10,7 @@ import {
 
 const router = express.Router();
 router.get('/sections/:sectionId/available-slots', getAvailableSlots);
-router.post('/bookings',  createBooking);
+router.post('/',  createBooking);
 router.get('/bookings',  getUserBookings);
 router.put('/bookings/:bookingId/cancel',  cancelBooking);
 
