@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import VOFooter from "../Components/Footer/VOFooter";
@@ -89,7 +88,7 @@ interface AppError {
   status?: number;
 }
 
-// SectionCard component
+// SectionCard component - Updated with CODE 2 styling
 const SectionCard = ({
   section,
   onManageSlots,
@@ -107,6 +106,7 @@ const SectionCard = ({
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between gap-6">
+          {/* Section Info */}
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-bold text-gray-900 mb-2 break-words">
               {section.name}
@@ -131,6 +131,8 @@ const SectionCard = ({
               </span>
             </div>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex flex-col gap-3">
             <div className="flex gap-2 justify-end">
               <button
@@ -169,7 +171,7 @@ const SectionCard = ({
   );
 };
 
-// SectionFormModal
+// SectionFormModal - Updated with CODE 2 styling
 const SectionFormModal = ({
   venue,
   section,
@@ -396,8 +398,9 @@ const SectionFormModal = ({
   </div>
 );
 
-// SlotSettingsFormModal
+// SlotSettingsFormModal - Updated with CODE 2 styling
 const SlotSettingsFormModal = ({
+  venue,
   section,
   slotSettings,
   onSubmit,
@@ -420,7 +423,9 @@ const SlotSettingsFormModal = ({
   const [timings, setTimings] = useState<TimingSlot[]>(
     slotSettings?.timings || [{ startTime: "", endTime: "" }]
   );
-  const [duration, setDuration] = useState<number>(slotSettings?.duration || 60);
+  const [duration, setDuration] = useState<number>(
+    slotSettings?.duration || 60
+  );
   const [name, setName] = useState<string>(slotSettings?.name || "");
   const [selectedDays, setSelectedDays] = useState<string[]>(
     slotSettings?.days || []
@@ -465,9 +470,7 @@ const SlotSettingsFormModal = ({
     setCustomDayPrice((prev) => {
       const existing = prev.find((cdp) => cdp.day === day);
       if (existing) {
-        return prev.map((cdp) =>
-          cdp.day === day ? { ...cdp, price } : cdp
-        );
+        return prev.map((cdp) => (cdp.day === day ? { ...cdp, price } : cdp));
       }
       return [...prev, { day, price }];
     });
@@ -487,7 +490,9 @@ const SlotSettingsFormModal = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateTimings()) {
-      alert("All timing slots must have valid start and end times (start < end)");
+      alert(
+        "All timing slots must have valid start and end times (start < end)"
+      );
       return;
     }
     if (selectedDays.length === 0) {
@@ -574,9 +579,7 @@ const SlotSettingsFormModal = ({
                     type="date"
                     name="startDate"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    defaultValue={
-                      slotSettings?.startDate?.split("T")[0] || ""
-                    }
+                    defaultValue={slotSettings?.startDate?.split("T")[0] || ""}
                   />
                 </div>
                 <div className="space-y-2">
@@ -587,9 +590,7 @@ const SlotSettingsFormModal = ({
                     type="date"
                     name="endDate"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    defaultValue={
-                      slotSettings?.endDate?.split("T")[0] || ""
-                    }
+                    defaultValue={slotSettings?.endDate?.split("T")[0] || ""}
                   />
                 </div>
               </div>
@@ -669,7 +670,8 @@ const SlotSettingsFormModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Slot Duration (minutes) <span className="text-red-500">*</span>
+                  Slot Duration (minutes){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -713,10 +715,14 @@ const SlotSettingsFormModal = ({
                       min="0"
                       placeholder="Price"
                       value={
-                        customDayPrice.find((cdp) => cdp.day === day)?.price || ""
+                        customDayPrice.find((cdp) => cdp.day === day)?.price ||
+                        ""
                       }
                       onChange={(e) =>
-                        updateCustomDayPrice(day, parseFloat(e.target.value) || 0)
+                        updateCustomDayPrice(
+                          day,
+                          parseFloat(e.target.value) || 0
+                        )
                       }
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     />
@@ -728,7 +734,8 @@ const SlotSettingsFormModal = ({
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Max Advance Booking (days) <span className="text-red-500">*</span>
+                  Max Advance Booking (days){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -831,7 +838,7 @@ const SlotSettingsFormModal = ({
   );
 };
 
-// BlockedSlotSettingsModal
+// BlockedSlotSettingsModal - Updated with CODE 2 styling
 const BlockedSlotSettingsModal = ({
   section,
   blockedSlot,
@@ -910,7 +917,9 @@ const BlockedSlotSettingsModal = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateTimings()) {
-      alert("All timing slots must have valid start and end times (start < end)");
+      alert(
+        "All timing slots must have valid start and end times (start < end)"
+      );
       return;
     }
     if (!validateDates()) {
@@ -939,7 +948,9 @@ const BlockedSlotSettingsModal = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-black">
-                  {blockedSlot ? "Edit Blocked Slot Settings" : "Create Blocked Slot Settings"}
+                  {blockedSlot
+                    ? "Edit Blocked Slot Settings"
+                    : "Create Blocked Slot Settings"}
                 </h2>
                 <p className="text-gray-600 text-sm">
                   Configure blocked time slots for {section.name}
@@ -1181,7 +1192,9 @@ const BlockedSlotSettingsModal = ({
                   ) : (
                     <span className="flex items-center">
                       <FaSave className="mr-2" />
-                      {blockedSlot ? "Update Blocked Slots" : "Save Blocked Slots"}
+                      {blockedSlot
+                        ? "Update Blocked Slots"
+                        : "Save Blocked Slots"}
                     </span>
                   )}
                 </button>
@@ -1194,7 +1207,7 @@ const BlockedSlotSettingsModal = ({
   );
 };
 
-// SlotSettingsListModal
+// SlotSettingsListModal - Updated with CODE 2 styling
 const SlotSettingsListModal = ({
   section,
   slotSettingsList,
@@ -1361,7 +1374,7 @@ const SlotSettingsListModal = ({
   );
 };
 
-// BlockedSettingsListModal
+// BlockedSettingsListModal - Updated with CODE 2 styling
 const BlockedSettingsListModal = ({
   section,
   blockedSettingsList,
@@ -1504,7 +1517,7 @@ const BlockedSettingsListModal = ({
   );
 };
 
-// Main ManageSections component
+// Main ManageSections component - Updated with CODE 2 styling
 const ManageSections = () => {
   const { venueId } = useParams<{ venueId: string }>();
   const navigate = useNavigate();
@@ -1528,8 +1541,11 @@ const ManageSections = () => {
   const [selectedBlockedSlot, setSelectedBlockedSlot] =
     useState<BlockedSlot | null>(null);
   const [slotSettingsList, setSlotSettingsList] = useState<SlotSettings[]>([]);
-  const [blockedSettingsList, setBlockedSettingsList] = useState<BlockedSlot[]>([]);
-  const [isSubmittingSection, setIsSubmittingSection] = useState<boolean>(false);
+  const [blockedSettingsList, setBlockedSettingsList] = useState<BlockedSlot[]>(
+    []
+  );
+  const [isSubmittingSection, setIsSubmittingSection] =
+    useState<boolean>(false);
   const [isSubmittingSlotSettings, setIsSubmittingSlotSettings] =
     useState<boolean>(false);
   const [isSubmittingBlockedSlots, setIsSubmittingBlockedSlots] =
@@ -1592,8 +1608,16 @@ const ManageSections = () => {
       sport,
       capacity: parseInt(capacity),
       description: description?.trim() || undefined,
-      images: images?.split(",").map((s) => s.trim()).filter(Boolean) || [],
-      rules: rules?.split(",").map((s) => s.trim()).filter(Boolean) || [],
+      images:
+        images
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
+      rules:
+        rules
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
       isActive: true,
     };
 
@@ -1639,13 +1663,24 @@ const ManageSections = () => {
       sport,
       capacity: parseInt(capacity),
       description: description?.trim() || undefined,
-      images: images?.split(",").map((s) => s.trim()).filter(Boolean) || [],
-      rules: rules?.split(",").map((s) => s.trim()).filter(Boolean) || [],
+      images:
+        images
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
+      rules:
+        rules
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [],
       isActive: true,
     };
 
     try {
-      const updatedSection = await updateSection(selectedSection._id, sectionData);
+      const updatedSection = await updateSection(
+        selectedSection._id,
+        sectionData
+      );
       setSections((prevSections) =>
         prevSections.map((s) =>
           s._id === selectedSection._id ? updatedSection : s
@@ -1663,7 +1698,8 @@ const ManageSections = () => {
   };
 
   const handleDeleteSection = async (sectionId: string) => {
-    if (!window.confirm("Are you sure you want to delete this section?")) return;
+    if (!window.confirm("Are you sure you want to delete this section?"))
+      return;
     setError(null);
     try {
       await deleteSection(sectionId);
@@ -1718,132 +1754,144 @@ const ManageSections = () => {
   };
 
   const handleCreateSlotSettings = async (
-  e: React.FormEvent<HTMLFormElement>,
-  timings: TimingSlot[],
-  customDayPrice: { day: string; price: number }[]
-) => {
-  e.preventDefault();
-  if (!venueId || !selectedSection) {
-    setError("Venue ID or section is missing");
-    return;
-  }
-  setIsSubmittingSlotSettings(true);
-  setError(null);
+    e: React.FormEvent<HTMLFormElement>,
+    timings: TimingSlot[],
+    customDayPrice: { day: string; price: number }[]
+  ) => {
+    e.preventDefault();
+    if (!venueId || !selectedSection) {
+      setError("Venue ID or section is missing");
+      return;
+    }
+    setIsSubmittingSlotSettings(true);
+    setError(null);
 
-  const formData = new FormData(e.currentTarget);
-  const name = formData.get("name")?.toString();
-  const startDate = formData.get("startDate")?.toString() || undefined;
-  const endDate = formData.get("endDate")?.toString() || undefined;
-  const days = formData.get("days")?.toString();
-  const duration = formData.get("duration")?.toString();
-  const price = formData.get("price")?.toString();
-  const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name")?.toString();
+    const startDate = formData.get("startDate")?.toString() || undefined;
+    const endDate = formData.get("endDate")?.toString() || undefined;
+    const days = formData.get("days")?.toString();
+    const duration = formData.get("duration")?.toString();
+    const price = formData.get("price")?.toString();
+    const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
 
-  if (!name || !duration || !price || !maxAdvanceBooking || !days) {
-    setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
-    setIsSubmittingSlotSettings(false);
-    return;
-  }
+    if (!name || !duration || !price || !maxAdvanceBooking || !days) {
+      setError(
+        "Required fields are missing: name, duration, price, maxAdvanceBooking, or days"
+      );
+      setIsSubmittingSlotSettings(false);
+      return;
+    }
 
-  if (!timings.every((t) => t.startTime && t.endTime)) {
-    setError("All timing slots must have valid start and end times");
-    setIsSubmittingSlotSettings(false);
-    return;
-  }
+    if (!timings.every((t) => t.startTime && t.endTime)) {
+      setError("All timing slots must have valid start and end times");
+      setIsSubmittingSlotSettings(false);
+      return;
+    }
 
-  const slotSettingsData: Omit<SlotSettings, "_id"> = {
-    name,
-    venue: venueId, // Changed from venueId to venue
-    section: selectedSection._id, // Changed from sectionId to section
-    startDate,
-    endDate,
-    days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-    timings,
-    duration: parseInt(duration),
-    price: parseFloat(price),
-    customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
-    maxAdvanceBooking: parseInt(maxAdvanceBooking),
-    isActive: true,
+    const slotSettingsData: Omit<SlotSettings, "_id"> = {
+      name,
+      venue: venueId,
+      section: selectedSection._id,
+      startDate,
+      endDate,
+      days: days
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
+      timings,
+      duration: parseInt(duration),
+      price: parseFloat(price),
+      customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
+      maxAdvanceBooking: parseInt(maxAdvanceBooking),
+      isActive: true,
+    };
+
+    try {
+      const newSlotSettings = await createSlotSettings(
+        selectedSection._id,
+        slotSettingsData
+      );
+      setSlotSettingsList((prev) => [...prev, newSlotSettings]);
+      setShowSlotSettingsFormModal(false);
+    } catch (err: unknown) {
+      const appError = err as AppError;
+      setError(appError.message || "Failed to create slot settings");
+      console.error("Create slot settings error:", appError);
+    } finally {
+      setIsSubmittingSlotSettings(false);
+    }
   };
 
-  try {
-    const newSlotSettings = await createSlotSettings(
-      selectedSection._id,
-      slotSettingsData
-    );
-    setSlotSettingsList((prev) => [...prev, newSlotSettings]);
-    setShowSlotSettingsFormModal(false);
-  } catch (err: unknown) {
-    const appError = err as AppError;
-    setError(appError.message || "Failed to create slot settings");
-    console.error("Create slot settings error:", appError);
-  } finally {
-    setIsSubmittingSlotSettings(false);
-  }
-};
   const handleUpdateSlotSettings = async (
-  e: React.FormEvent<HTMLFormElement>,
-  timings: TimingSlot[],
-  customDayPrice: { day: string; price: number }[]
-) => {
-  e.preventDefault();
-  if (!selectedSlotSettings || !selectedSection) {
-    setError("Slot settings or section is missing");
-    return;
-  }
-  setIsSubmittingSlotSettings(true);
-  setError(null);
+    e: React.FormEvent<HTMLFormElement>,
+    timings: TimingSlot[],
+    customDayPrice: { day: string; price: number }[]
+  ) => {
+    e.preventDefault();
+    if (!selectedSlotSettings || !selectedSection) {
+      setError("Slot settings or section is missing");
+      return;
+    }
+    setIsSubmittingSlotSettings(true);
+    setError(null);
 
-  const formData = new FormData(e.currentTarget);
-  const name = formData.get("name")?.toString();
-  const startDate = formData.get("startDate")?.toString() || undefined;
-  const endDate = formData.get("endDate")?.toString() || undefined;
-  const days = formData.get("days")?.toString();
-  const duration = formData.get("duration")?.toString();
-  const price = formData.get("price")?.toString();
-  const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name")?.toString();
+    const startDate = formData.get("startDate")?.toString() || undefined;
+    const endDate = formData.get("endDate")?.toString() || undefined;
+    const days = formData.get("days")?.toString();
+    const duration = formData.get("duration")?.toString();
+    const price = formData.get("price")?.toString();
+    const maxAdvanceBooking = formData.get("maxAdvanceBooking")?.toString();
 
-  if (!name || !duration || !price || !maxAdvanceBooking || !days) {
-    setError("Required fields are missing: name, duration, price, maxAdvanceBooking, or days");
-    setIsSubmittingSlotSettings(false);
-    return;
-  }
+    if (!name || !duration || !price || !maxAdvanceBooking || !days) {
+      setError(
+        "Required fields are missing: name, duration, price, maxAdvanceBooking, or days"
+      );
+      setIsSubmittingSlotSettings(false);
+      return;
+    }
 
-  const slotSettingsData: Partial<SlotSettings> = {
-    name,
-    venue: venueId, // Changed from venue to venueId
-    section: selectedSection._id, // Changed from section to sectionId
-    startDate,
-    endDate,
-    days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-    timings,
-    duration: parseInt(duration),
-    price: parseFloat(price),
-    customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
-    maxAdvanceBooking: parseInt(maxAdvanceBooking),
-    isActive: true,
+    const slotSettingsData: Partial<SlotSettings> = {
+      name,
+      venue: venueId,
+      section: selectedSection._id,
+      startDate,
+      endDate,
+      days: days
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
+      timings,
+      duration: parseInt(duration),
+      price: parseFloat(price),
+      customDayPrice: customDayPrice.filter((cdp) => cdp.price > 0),
+      maxAdvanceBooking: parseInt(maxAdvanceBooking),
+      isActive: true,
+    };
+
+    try {
+      const updatedSlotSettings = await updateSlotSettings(
+        selectedSlotSettings._id,
+        slotSettingsData
+      );
+      setSlotSettingsList((prev) =>
+        prev.map((s) =>
+          s._id === selectedSlotSettings._id ? updatedSlotSettings : s
+        )
+      );
+      setShowSlotSettingsFormModal(false);
+      setSelectedSlotSettings(null);
+    } catch (err: unknown) {
+      const appError = err as AppError;
+      setError(appError.message || "Failed to update slot settings");
+      console.error("Update slot settings error:", appError);
+    } finally {
+      setIsSubmittingSlotSettings(false);
+    }
   };
 
-  try {
-    const updatedSlotSettings = await updateSlotSettings(
-      selectedSlotSettings._id,
-      slotSettingsData
-    );
-    setSlotSettingsList((prev) =>
-      prev.map((s) =>
-        s._id === selectedSlotSettings._id ? updatedSlotSettings : s
-      )
-    );
-    setShowSlotSettingsFormModal(false);
-    setSelectedSlotSettings(null);
-  } catch (err: unknown) {
-    const appError = err as AppError;
-    setError(appError.message || "Failed to update slot settings");
-    console.error("Update slot settings error:", appError);
-  } finally {
-    setIsSubmittingSlotSettings(false);
-  }
-};
   const handleDeleteSlotSettings = async (slotSettingsId: string) => {
     if (!window.confirm("Are you sure you want to delete this slot settings?"))
       return;
@@ -1859,7 +1907,8 @@ const ManageSections = () => {
       console.error("Delete slot settings error:", appError);
     }
   };
-    const handleCreateBlockedSlot = async (
+
+  const handleCreateBlockedSlot = async (
     e: React.FormEvent<HTMLFormElement>,
     timings: TimingSlot[]
   ) => {
@@ -1879,7 +1928,9 @@ const ManageSections = () => {
     const reason = formData.get("reason")?.toString();
 
     if (!name || !startDate || !endDate || !days || !reason) {
-      setError("Required fields are missing: name, startDate, endDate, days, or reason");
+      setError(
+        "Required fields are missing: name, startDate, endDate, days, or reason"
+      );
       setIsSubmittingBlockedSlots(false);
       return;
     }
@@ -1896,7 +1947,10 @@ const ManageSections = () => {
       section: selectedSection._id,
       startDate,
       endDate,
-      days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+      days: days
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
       timings,
       reason,
       isActive: true,
@@ -1935,7 +1989,9 @@ const ManageSections = () => {
     const reason = formData.get("reason")?.toString();
 
     if (!name || !startDate || !endDate || !days || !reason) {
-      setError("Required fields are missing: name, startDate, endDate, days, or reason");
+      setError(
+        "Required fields are missing: name, startDate, endDate, days, or reason"
+      );
       setIsSubmittingBlockedSlots(false);
       return;
     }
@@ -1946,7 +2002,10 @@ const ManageSections = () => {
       section: selectedSection._id,
       startDate,
       endDate,
-      days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
+      days: days
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean),
       timings,
       reason,
       isActive: true,
@@ -1958,7 +2017,9 @@ const ManageSections = () => {
         blockedSlotData
       );
       setBlockedSettingsList((prev) =>
-        prev.map((s) => (s._id === selectedBlockedSlot._id ? updatedBlockedSlot : s))
+        prev.map((s) =>
+          s._id === selectedBlockedSlot._id ? updatedBlockedSlot : s
+        )
       );
       setShowBlockedSlotSettingsModal(false);
       setSelectedBlockedSlot(null);
@@ -1972,11 +2033,18 @@ const ManageSections = () => {
   };
 
   const handleDeleteBlockedSlot = async (blockedSettingsId: string) => {
-    if (!window.confirm("Are you sure you want to delete this blocked slot settings?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this blocked slot settings?"
+      )
+    )
+      return;
     setError(null);
     try {
       await deleteBlockedSettings(blockedSettingsId);
-      setBlockedSettingsList((prev) => prev.filter((s) => s._id !== blockedSettingsId));
+      setBlockedSettingsList((prev) =>
+        prev.filter((s) => s._id !== blockedSettingsId)
+      );
     } catch (err: unknown) {
       const appError = err as AppError;
       setError(appError.message || "Failed to delete blocked slot settings");
@@ -1986,112 +2054,133 @@ const ManageSections = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <svg
-            className="animate-spin h-5 w-5 text-gray-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <span className="text-gray-600">Loading...</span>
+      <>
+        <VenueNavbar />
+        <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading venue and sections...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!venue) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-red-600">Venue not found</p>
-      </div>
+      <>
+        <VenueNavbar />
+        <div className="min-h-screen bg-[#FFFFF8] flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🏟️</div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              Venue not found
+            </h3>
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+            >
+              <FaArrowLeft />
+              <span>Back to Venues</span>
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <VenueNavbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-            >
-              <FaArrowLeft className="text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Manage Sections - {venue.name}
-              </h1>
-              <p className="text-gray-600">
-                {venue.openingTime} - {venue.closingTime}
-              </p>
+      <div className="min-h-screen bg-[#FFFFF8]">
+        <div className="bg-gradient-to-r from-black to-gray-900 px-6 sm:px-12 lg:px-20 pt-12 pb-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <FaArrowLeft className="text-white" />
+                  </button>
+                  <div>
+                    <h1 className="text-4xl lg:text-5xl font-bold text-white tracking-tight">
+                      {venue.name}
+                    </h1>
+                    <p className="text-gray-300 text-lg mt-1">
+                      Manage sections and slot settings
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {venue.sports.map((sport, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-xs font-medium rounded-full"
+                    >
+                      {sport}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="group flex items-center space-x-2 px-6 py-3 bg-white text-black rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 border-2 border-gray-800"
+              >
+                <FaPlus className="group-hover:rotate-90 transition-transform duration-200" />
+                <span>New Section</span>
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-          >
-            <FaPlus className="text-sm" />
-            <span>Add New Section</span>
-          </button>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-start">
-            <svg
-              className="w-4 h-4 mt-0.5 mr-2 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="px-6 sm:px-12 lg:px-20 py-12">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-black mb-4">Sections</h2>
+              <p className="text-gray-600">
+                Manage the different sections of your venue (e.g., courts,
+                fields, pools)
+              </p>
+            </div>
 
-        {sections.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No sections found. Add a section to get started.</p>
+            {sections.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🏀</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  No sections found
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Get started by adding your first section
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+                >
+                  <FaPlus />
+                  <span>Add First Section</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {sections.map((section) => (
+                  <SectionCard
+                    key={section._id}
+                    section={section}
+                    onManageSlots={handleOpenSlotSettingsListModal}
+                    onBlockedSlots={handleOpenBlockedSettingsListModal}
+                    onEdit={(section) => {
+                      setSelectedSection(section);
+                      setShowEditModal(true);
+                    }}
+                    onDelete={handleDeleteSection}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sections.map((section) => (
-              <SectionCard
-                key={section._id}
-                section={section}
-                onManageSlots={handleOpenSlotSettingsListModal}
-                onEdit={(section) => {
-                  setSelectedSection(section);
-                  setShowEditModal(true);
-                }}
-                onDelete={handleDeleteSection}
-                onBlockedSlots={handleOpenBlockedSettingsListModal}
-              />
-            ))}
-          </div>
-        )}
+        </div>
 
         {showAddModal && (
           <SectionFormModal
@@ -2102,7 +2191,6 @@ const ManageSections = () => {
             error={error}
           />
         )}
-
         {showEditModal && selectedSection && (
           <SectionFormModal
             venue={venue}
@@ -2117,7 +2205,6 @@ const ManageSections = () => {
             isEditMode
           />
         )}
-
         {showSlotSettingsListModal && selectedSection && (
           <SlotSettingsListModal
             section={selectedSection}
@@ -2134,13 +2221,16 @@ const ManageSections = () => {
             onClose={() => setShowSlotSettingsListModal(false)}
           />
         )}
-
         {showSlotSettingsFormModal && selectedSection && (
           <SlotSettingsFormModal
             venue={venue}
             section={selectedSection}
             slotSettings={selectedSlotSettings}
-            onSubmit={selectedSlotSettings ? handleUpdateSlotSettings : handleCreateSlotSettings}
+            onSubmit={
+              selectedSlotSettings
+                ? handleUpdateSlotSettings
+                : handleCreateSlotSettings
+            }
             onClose={() => {
               setShowSlotSettingsFormModal(false);
               setSelectedSlotSettings(null);
@@ -2149,7 +2239,6 @@ const ManageSections = () => {
             error={error}
           />
         )}
-
         {showBlockedSettingsListModal && selectedSection && (
           <BlockedSettingsListModal
             section={selectedSection}
@@ -2166,12 +2255,15 @@ const ManageSections = () => {
             onClose={() => setShowBlockedSettingsListModal(false)}
           />
         )}
-
         {showBlockedSlotSettingsModal && selectedSection && (
           <BlockedSlotSettingsModal
             section={selectedSection}
             blockedSlot={selectedBlockedSlot}
-            onSubmit={selectedBlockedSlot ? handleUpdateBlockedSlot : handleCreateBlockedSlot}
+            onSubmit={
+              selectedBlockedSlot
+                ? handleUpdateBlockedSlot
+                : handleCreateBlockedSlot
+            }
             onClose={() => {
               setShowBlockedSlotSettingsModal(false);
               setSelectedBlockedSlot(null);
@@ -2182,7 +2274,7 @@ const ManageSections = () => {
         )}
       </div>
       <VOFooter />
-    </div>
+    </>
   );
 };
 
