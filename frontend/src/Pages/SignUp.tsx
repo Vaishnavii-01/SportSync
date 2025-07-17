@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import GeneralNavbar from "../Components/Navbar/GeneralNavbar";
+import { useNavigate } from "react-router-dom";
 
 const SignUp = () => {
   const [name, setName] = useState("");
@@ -10,32 +11,61 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userType, setUserType] = useState<"customer" | "venueOwner">("customer");
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (!agreeToTerms) {
       setError("Please agree to the Terms of Service and Privacy Policy");
       return;
     }
-    setError(null);
-    const formData = { name, email, password, phone, role: "user" };
+
+    if (!name || !email || !password || !phone) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:3000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      console.log("Response:", response, "Data:", data); // Debugging log
-      if (response.ok) {
-        console.log("Signup successful:", data);
-        // Redirect or show success message here
-      } else {
-        setError(data.error || "Signup failed");
+      const users = JSON.parse(localStorage.getItem('users') || "[]");
+
+      if (users.some((user: any) => user.email === email)) {
+        setError("Email already registered");
+        return;
       }
+
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        email,
+        password,
+        phone,
+        role: userType,
+        createdAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('users', JSON.stringify([...users, newUser]));
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
+      }));
+
+      console.log("Current user stored:", localStorage.getItem('currentUser'));
+      console.log("All users:", localStorage.getItem('users'));
+
+      navigate(userType === 'customer' ? '/customer/dashboard' : '/venue/dashboard');
     } catch (err) {
-      console.error("Fetch error:", err); // Debugging log
-      setError("An error occurred. Please try again.");
+      console.error("Signup error:", err);
+      setError("Failed to create account. Please try again.");
     }
   };
 
@@ -67,6 +97,31 @@ const SignUp = () => {
               <p className="text-gray-600 text-sm">
                 Quick & Simple way to Automate your bookings
               </p>
+            </div>
+
+            <div className="flex mb-6 rounded-lg bg-gray-100 p-1">
+              <button
+                type="button"
+                onClick={() => setUserType('customer')}
+                className={`flex-1 py-2 rounded-md text-sm font-medium ${
+                  userType === 'customer' 
+                    ? 'bg-white shadow-sm text-black' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                I'm a Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('venueOwner')}
+                className={`flex-1 py-2 rounded-md text-sm font-medium ${
+                  userType === 'venueOwner' 
+                    ? 'bg-white shadow-sm text-black' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                I'm a Venue Owner
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -123,10 +178,10 @@ const SignUp = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PHONE
+                  PHONE NUMBER
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+1 123-456-7890"
@@ -154,21 +209,26 @@ const SignUp = () => {
                   </button>
                 </span>
               </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              {error && (
+                <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                  {error}
+                </div>
+              )}
 
               <button
                 type="submit"
                 className="w-full bg-black text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200"
               >
-                CREATE AN ACCOUNT
+                CREATE {userType.toUpperCase()} ACCOUNT
               </button>
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   Already have an account?{" "}
-                  <button className="text-blue-600 hover:text-blue-800 font-semibold">
+                  <a href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
                     Log In
-                  </button>
+                  </a>
                 </p>
               </div>
             </form>

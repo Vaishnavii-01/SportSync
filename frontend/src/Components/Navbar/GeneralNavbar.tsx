@@ -91,7 +91,7 @@ body, html {
         </ul>
         <div className="nav-buttons">
           <button className="btn white-btn">
-            <Link to="/signin">Sign In</Link>
+            <Link to="/signin">Sign Up</Link>
           </button>
           <button className="btn white-btn">
             <Link to="/login">Log In</Link>
