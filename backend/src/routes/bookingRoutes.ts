@@ -9,10 +9,10 @@ import {
 } from '../controllers/bookingController';
 
 const router = express.Router();
-router.get('/sections/:sectionId/available-slots', getAvailableSlots);
-router.post('/', createBooking);
-router.get('/bookings',  getUserBookings);
-router.put('/bookings/:bookingId/cancel',  cancelBooking);
+router.get('/:sectionId/available-slots', getAvailableSlots);
+router.post('/',  createBooking);
+router.get('/',  getUserBookings);
+router.put('/:bookingId/cancel',  cancelBooking);
 
 
 export default router;

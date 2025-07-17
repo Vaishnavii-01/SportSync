@@ -65,7 +65,7 @@ const getAvailableSlots = async (
 ): Promise<{ availableSlots: Slot[]; blockedReason?: string }> => {
   try {
     const response = await axios.get(
-      `http://localhost:5000/api/slot-settings/sections/${sectionId}/available-slots`,
+      `http://localhost:5000/api/bookings/${sectionId}/available-slots`,
       {
         params: { date },
       }
