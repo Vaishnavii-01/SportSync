@@ -1,4 +1,3 @@
-// services/sectionService.ts
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -103,7 +102,7 @@ export const createSlotSettings = async (sectionId: string, settingsData: Omit<S
     );
     return response.data.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.error || "Failed to create slot settings"); // Line 106
+    throw new Error(error.response?.data?.error || "Failed to create slot settings");
   }
 };
 
@@ -144,15 +143,23 @@ export const getSlotSettings = async (sectionId: string): Promise<SlotSettings[]
 };
 
 // Blocked Settings operations
-export const saveBlockedSlots = async (sectionId: string, blockedSlotData: Omit<BlockedSlot, "_id">): Promise<BlockedSlot> => {
+export const saveBlockedSlots = async (blockedSlotData: Omit<BlockedSlot, "_id">): Promise<BlockedSlot> => {
   try {
+    // Ensure the data structure matches the backend expectation
+    const formattedData = {
+      ...blockedSlotData,
+      venueId: blockedSlotData.venue, // Align with backend field name
+      sectionId: blockedSlotData.section, // Align with backend field name
+      venue: undefined, // Remove original venue field
+      section: undefined, // Remove original section field
+    };
     const response = await axios.post(
-      `${API_BASE_URL}/blocked-settings/sections/${sectionId}/blocked-settings`,
-      blockedSlotData
+      `${API_BASE_URL}/blocked-settings/sections/${blockedSlotData.section}/blocked-settings`,
+      formattedData
     );
     return response.data.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.error || "Failed to save blocked slots");
+    throw new Error(error.response?.data?.error || "Failed to create blocked slots");
   }
 };
 

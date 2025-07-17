@@ -1,4 +1,4 @@
-// src/components/ManageSections.tsx
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import VOFooter from "../Components/Footer/VOFooter";
@@ -1754,8 +1754,8 @@ const ManageSections = () => {
 
     const slotSettingsData: Omit<SlotSettings, "_id"> = {
       name,
-      venue: venueId,
-      section: selectedSection._id,
+      venueId, // Changed from venue to venueId
+      sectionId: selectedSection._id, // Changed from section to sectionId
       startDate,
       endDate,
       days: days.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
@@ -1852,7 +1852,7 @@ const ManageSections = () => {
       return;
     setError(null);
     try {
-            await deleteSlotSettings(slotSettingsId);
+      await deleteSlotSettings(slotSettingsId);
       setSlotSettingsList((prev) =>
         prev.filter((s) => s._id !== slotSettingsId)
       );
@@ -1862,8 +1862,7 @@ const ManageSections = () => {
       console.error("Delete slot settings error:", appError);
     }
   };
-
-  const handleCreateBlockedSlots = async (
+    const handleCreateBlockedSlot = async (
     e: React.FormEvent<HTMLFormElement>,
     timings: TimingSlot[]
   ) => {
@@ -1912,14 +1911,14 @@ const ManageSections = () => {
       setShowBlockedSlotSettingsModal(false);
     } catch (err: unknown) {
       const appError = err as AppError;
-      setError(appError.message || "Failed to create blocked slots");
-      console.error("Create blocked slots error:", appError);
+      setError(appError.message || "Failed to create blocked slot settings");
+      console.error("Create blocked slot error:", appError);
     } finally {
       setIsSubmittingBlockedSlots(false);
     }
   };
 
-  const handleUpdateBlockedSlots = async (
+  const handleUpdateBlockedSlot = async (
     e: React.FormEvent<HTMLFormElement>,
     timings: TimingSlot[]
   ) => {
@@ -1962,41 +1961,58 @@ const ManageSections = () => {
         blockedSlotData
       );
       setBlockedSettingsList((prev) =>
-        prev.map((s) =>
-          s._id === selectedBlockedSlot._id ? updatedBlockedSlot : s
-        )
+        prev.map((s) => (s._id === selectedBlockedSlot._id ? updatedBlockedSlot : s))
       );
       setShowBlockedSlotSettingsModal(false);
       setSelectedBlockedSlot(null);
     } catch (err: unknown) {
       const appError = err as AppError;
-      setError(appError.message || "Failed to update blocked slots");
-      console.error("Update blocked slots error:", appError);
+      setError(appError.message || "Failed to update blocked slot settings");
+      console.error("Update blocked slot error:", appError);
     } finally {
       setIsSubmittingBlockedSlots(false);
     }
   };
 
-  const handleDeleteBlockedSettings = async (blockedSettingsId: string) => {
-    if (!window.confirm("Are you sure you want to delete this blocked slot settings?"))
-      return;
+  const handleDeleteBlockedSlot = async (blockedSettingsId: string) => {
+    if (!window.confirm("Are you sure you want to delete this blocked slot settings?")) return;
     setError(null);
     try {
       await deleteBlockedSettings(blockedSettingsId);
-      setBlockedSettingsList((prev) =>
-        prev.filter((s) => s._id !== blockedSettingsId)
-      );
+      setBlockedSettingsList((prev) => prev.filter((s) => s._id !== blockedSettingsId));
     } catch (err: unknown) {
       const appError = err as AppError;
-      setError(appError.message || "Failed to delete blocked settings");
-      console.error("Delete blocked settings error:", appError);
+      setError(appError.message || "Failed to delete blocked slot settings");
+      console.error("Delete blocked slot error:", appError);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+        <div className="flex items-center space-x-2">
+          <svg
+            className="animate-spin h-5 w-5 text-gray-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span className="text-gray-600">Loading...</span>
+        </div>
       </div>
     );
   }
@@ -2004,7 +2020,7 @@ const ManageSections = () => {
   if (!venue) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-red-600">Venue not found.</p>
+        <p className="text-red-600">Venue not found</p>
       </div>
     );
   }
@@ -2013,31 +2029,30 @@ const ManageSections = () => {
     <div className="min-h-screen bg-gray-50">
       <VenueNavbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
-          >
-            <FaArrowLeft className="mr-2" />
-            Back
-          </button>
-          <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              <FaArrowLeft className="text-gray-600" />
+            </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Manage Sections for {venue.name}
+                Manage Sections - {venue.name}
               </h1>
-              <p className="text-gray-600 mt-1">
-                Configure sections, slot settings, and blocked slots
+              <p className="text-gray-600">
+                {venue.openingTime} - {venue.closingTime}
               </p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-            >
-              <FaPlus className="text-sm" />
-              <span>Add Section</span>
-            </button>
           </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+          >
+            <FaPlus className="text-sm" />
+            <span>Add New Section</span>
+          </button>
         </div>
 
         {error && (
@@ -2061,7 +2076,7 @@ const ManageSections = () => {
 
         {sections.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">No sections found. Add one to get started.</p>
+            <p className="text-gray-600">No sections found. Add a section to get started.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2081,7 +2096,7 @@ const ManageSections = () => {
           </div>
         )}
 
-        {showAddModal && venue && (
+        {showAddModal && (
           <SectionFormModal
             venue={venue}
             onSubmit={handleAddSection}
@@ -2091,7 +2106,7 @@ const ManageSections = () => {
           />
         )}
 
-        {showEditModal && venue && selectedSection && (
+        {showEditModal && selectedSection && (
           <SectionFormModal
             venue={venue}
             section={selectedSection}
@@ -2110,30 +2125,25 @@ const ManageSections = () => {
           <SlotSettingsListModal
             section={selectedSection}
             slotSettingsList={slotSettingsList}
-            onCreate={() => setShowSlotSettingsFormModal(true)}
+            onCreate={() => {
+              setSelectedSlotSettings(null);
+              setShowSlotSettingsFormModal(true);
+            }}
             onEdit={(slotSettings) => {
               setSelectedSlotSettings(slotSettings);
               setShowSlotSettingsFormModal(true);
             }}
             onDelete={handleDeleteSlotSettings}
-            onClose={() => {
-              setShowSlotSettingsListModal(false);
-              setSelectedSection(null);
-              setSlotSettingsList([]);
-            }}
+            onClose={() => setShowSlotSettingsListModal(false)}
           />
         )}
 
-        {showSlotSettingsFormModal && venue && selectedSection && (
+        {showSlotSettingsFormModal && selectedSection && (
           <SlotSettingsFormModal
             venue={venue}
             section={selectedSection}
             slotSettings={selectedSlotSettings}
-            onSubmit={
-              selectedSlotSettings
-                ? handleUpdateSlotSettings
-                : handleCreateSlotSettings
-            }
+            onSubmit={selectedSlotSettings ? handleUpdateSlotSettings : handleCreateSlotSettings}
             onClose={() => {
               setShowSlotSettingsFormModal(false);
               setSelectedSlotSettings(null);
@@ -2147,17 +2157,16 @@ const ManageSections = () => {
           <BlockedSettingsListModal
             section={selectedSection}
             blockedSettingsList={blockedSettingsList}
-            onCreate={() => setShowBlockedSlotSettingsModal(true)}
+            onCreate={() => {
+              setSelectedBlockedSlot(null);
+              setShowBlockedSlotSettingsModal(true);
+            }}
             onEdit={(blockedSlot) => {
               setSelectedBlockedSlot(blockedSlot);
               setShowBlockedSlotSettingsModal(true);
             }}
-            onDelete={handleDeleteBlockedSettings}
-            onClose={() => {
-              setShowBlockedSettingsListModal(false);
-              setSelectedSection(null);
-              setBlockedSettingsList([]);
-            }}
+            onDelete={handleDeleteBlockedSlot}
+            onClose={() => setShowBlockedSettingsListModal(false)}
           />
         )}
 
@@ -2165,11 +2174,7 @@ const ManageSections = () => {
           <BlockedSlotSettingsModal
             section={selectedSection}
             blockedSlot={selectedBlockedSlot}
-            onSubmit={
-              selectedBlockedSlot
-                ? handleUpdateBlockedSlots
-                : handleCreateBlockedSlots
-            }
+            onSubmit={selectedBlockedSlot ? handleUpdateBlockedSlot : handleCreateBlockedSlot}
             onClose={() => {
               setShowBlockedSlotSettingsModal(false);
               setSelectedBlockedSlot(null);
@@ -2185,4 +2190,3 @@ const ManageSections = () => {
 };
 
 export default ManageSections;
-     
