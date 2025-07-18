@@ -7,38 +7,47 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
-    const user = users.find((u: any) => u.email === email);
-    
-    if (!user) {
-      setError("User not found");
-      return;
-    }
+      const data = await response.json();
 
-    if (user.password !== password) {
-      setError("Incorrect password");
-      return;
-    }
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to log in');
+      }
 
-    localStorage.setItem('currentUser', JSON.stringify({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.name
-    }));
+      // Store user data in localStorage for session management
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: Date.now().toString(),
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+      }));
 
-    if (user.role === 'customer') {
-      navigate('/customer/search');
-    } else {
-      navigate('/venue/dashboard');
+      if (data.user.role === 'user') {
+        navigate('/customer/search');
+      } else {
+        navigate('/venue/dashboard');
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Failed to log in. Please try again.");
     }
   };
 
@@ -64,7 +73,7 @@ const Login = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   EMAIL ADDRESS
@@ -103,12 +112,12 @@ const Login = () => {
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <button
-                type="submit"
+                onClick={handleSubmit}
                 className="w-full bg-black text-white py-3 rounded-lg font-semibold"
               >
                 LOG IN
               </button>
-            </form>
+            </div>
           </div>
         </div>
       </div>

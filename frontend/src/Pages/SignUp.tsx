@@ -14,7 +14,7 @@ const SignUp = () => {
   const [userType, setUserType] = useState<"customer" | "venueOwner">("customer");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -34,38 +34,38 @@ const SignUp = () => {
     }
 
     try {
-      const users = JSON.parse(localStorage.getItem('users') || "[]");
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          phone,
+          role: userType === 'customer' ? 'user' : 'venue owner',
+        }),
+      });
 
-      if (users.some((user: any) => user.email === email)) {
-        setError("Email already registered");
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
       }
 
-      const newUser = {
-        id: Date.now().toString(),
-        name,
-        email,
-        password,
-        phone,
-        role: userType,
-        createdAt: new Date().toISOString()
-      };
-
-      localStorage.setItem('users', JSON.stringify([...users, newUser]));
+      // Store user data in localStorage for session management
       localStorage.setItem('currentUser', JSON.stringify({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role
+        id: Date.now().toString(),
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
       }));
 
-      console.log("Current user stored:", localStorage.getItem('currentUser'));
-      console.log("All users:", localStorage.getItem('users'));
-
       navigate(userType === 'customer' ? '/customer/dashboard' : '/venue/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Signup error:", err);
-      setError("Failed to create account. Please try again.");
+      setError(err.message || "Failed to create account. Please try again.");
     }
   };
 
@@ -124,7 +124,7 @@ const SignUp = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   FULL NAME
@@ -217,7 +217,7 @@ const SignUp = () => {
               )}
 
               <button
-                type="submit"
+                onClick={handleSubmit}
                 className="w-full bg-black text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200"
               >
                 CREATE {userType.toUpperCase()} ACCOUNT
@@ -231,7 +231,7 @@ const SignUp = () => {
                   </a>
                 </p>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
